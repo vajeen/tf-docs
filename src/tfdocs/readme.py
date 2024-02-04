@@ -124,8 +124,9 @@ class Readme:
             os.path.dirname(os.path.abspath(self.variables_file))
         )
         readme_template = [
-            f"module {directory} {{",
-            f'  source = "{get_module_url()}/{directory}"',
+            "```",
+            f'module {directory} {{',
+            f'  source = "{get_module_url()}"',
         ]
 
         for item in self.sorted_variables:
@@ -137,6 +138,7 @@ class Readme:
             )
 
         readme_template.append("}")
+        readme_template.append("```")
 
         if os.path.exists(self.readme_file):
             with open(self.readme_file, "r") as file:

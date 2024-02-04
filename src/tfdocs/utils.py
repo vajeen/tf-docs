@@ -76,6 +76,6 @@ def get_module_url():
         repo_root = repo.git.rev_parse("--show-toplevel")
         current_path = os.path.abspath(os.getcwd())
         rel_path = os.path.relpath(current_path, repo_root)
-        return f"{repo.remotes.origin.url}/{rel_path}=ref=<TAG>"
+        return f"{repo.remotes.origin.url}//{rel_path}?ref=<TAG>"
     except git.exc.InvalidGitRepositoryError:
-        return "Not a Git repository or no remote URL"
+        return os.getcwd()
