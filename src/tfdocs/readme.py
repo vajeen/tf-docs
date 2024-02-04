@@ -7,6 +7,7 @@ from tfdocs.utils import (
     construct_tf_file,
     get_module_url,
 )
+from rich.console import Console
 
 
 class Readme:
@@ -18,6 +19,7 @@ class Readme:
         self.readme_file = readme_file
         self.variables_file = variables_file
         self.str_len = 0
+        self.console = Console()
 
         try:
             with open(self.variables_file, "r") as file:
@@ -96,7 +98,6 @@ class Readme:
                 self.variables.append(attributes)
 
             self.sorted_variables = sorted(self.variables, key=lambda k: k["name"])
-            print(self.sorted_variables)
 
             if construct_tf_file(self.sorted_variables) == file_content:
                 self.variables_changed = False
@@ -109,7 +110,7 @@ class Readme:
             file.writelines(construct_tf_file(self.sorted_variables))
 
     def print_variables_file(self):
-        print("--- variables.tf ---")
+        self.console.print("[purple]--- variables.tf ---[/]")
         print(construct_tf_file(self.sorted_variables))
 
     def get_status(self):
@@ -168,7 +169,7 @@ class Readme:
         return readme_template
 
     def print_readme(self):
-        print("--- README.md ---")
+        self.console.print("[purple]--- README.md ---[/]")
         for line in self.construct_readme():
             print(line)
 

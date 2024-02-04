@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import errno
 import sys
+from rich.console import Console
 from tfdocs import cli
 from tfdocs import readme
 
@@ -78,6 +79,7 @@ def main(argv: list[str] | None = None):
 
 
 def report_and_exit(status: [], readme_file, variables_file, format_variables, dry_run):
+    console = Console()
     changed_files = []
     unchanged_files = []
     msg = ""
@@ -95,13 +97,13 @@ def report_and_exit(status: [], readme_file, variables_file, format_variables, d
             unchanged_files.append(variables_file)
 
     if changed_files:
-        msg += f"{' and '.join(changed_files)} {verb} changed"
+        msg += f"{' and '.join([f'[purple][bold]{file}[/][/]' for file in changed_files])} {verb} { '[yellow]changed[/]' if dry_run else '[green]updated[/]'}"
         if unchanged_files:
-            msg += f", no changes to be made to {' or '.join(unchanged_files)}"
+            msg += f", [green]no changes[/] to be made to {' or '.join([f'[purple][bold]{file}[/][/]' for file in unchanged_files])}"
     else:
-        msg += f"No changes to be made to {' or '.join(unchanged_files)}"
+        msg += f"[green]No changes[/] to be made to {' or '.join([f'[purple][bold]{file}[/][/]' for file in unchanged_files])}"
 
-    print(msg)
+    console.print(msg)
     sys.exit(0)
 
 
