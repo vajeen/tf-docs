@@ -96,6 +96,7 @@ class Readme:
                 self.variables.append(attributes)
 
             self.sorted_variables = sorted(self.variables, key=lambda k: k["name"])
+            print(self.sorted_variables)
 
             if construct_tf_file(self.sorted_variables) == file_content:
                 self.variables_changed = False
@@ -108,13 +109,14 @@ class Readme:
             file.writelines(construct_tf_file(self.sorted_variables))
 
     def print_variables_file(self):
+        print("--- variables.tf ---")
         print(construct_tf_file(self.sorted_variables))
 
-    def get_variables_changed(self):
-        return self.variables_changed
-
-    def get_readme_changed(self):
-        return self.readme_changed
+    def get_status(self):
+        return {
+            "readme": self.readme_changed,
+            "variables": self.variables_changed,
+        }
 
     def construct_readme(self):
         directory = os.path.basename(
@@ -158,12 +160,15 @@ class Readme:
                 # Check if the README.md file has changed
                 if lines_constructed == lines:
                     self.readme_changed = False
+            else:
+                return readme_template
 
             return lines_constructed
 
         return readme_template
 
     def print_readme(self):
+        print("--- README.md ---")
         for line in self.construct_readme():
             print(line)
 

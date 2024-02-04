@@ -67,7 +67,7 @@ def construct_tf_file(content):
     file_content = ""
     for content in content:
         file_content += construct_tf_variable(content)
-    return file_content
+    return file_content.rstrip() + '\n'
 
 
 def get_module_url():
