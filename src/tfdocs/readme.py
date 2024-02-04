@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 from tfdocs.utils import (
     count_blocks,
     match_type_constructors,
@@ -9,18 +10,17 @@ from tfdocs.utils import (
 
 
 class Readme:
-    def __init__(self, filename, readme_path, variables_path):
-        self.filename = filename
+    def __init__(self, readme_file, variables_file):
         self.readme_content: str
         self.variables_content = []
         self.readme_changed = True
         self.variables_changed = True
-        self.readme_path = readme_path
-        self.variables_path = variables_path
+        self.readme_file = readme_file
+        self.variables_file = variables_file
         self.str_len = 0
 
         try:
-            with open(self.filename, "r") as file:
+            with open(self.variables_file, "r") as file:
                 file_content = file.read()
 
             self.variables_content = file_content.split("\n")
@@ -101,9 +101,10 @@ class Readme:
                 self.variables_changed = False
         except FileNotFoundError:
             print("variables.tf file not found")
+            sys.exit(-1)
 
     def write_variables(self):
-        with open(self.variables_path, "w") as file:
+        with open(self.variables_file, "w") as file:
             file.writelines(construct_tf_file(self.sorted_variables))
 
     def print_variables_file(self):
@@ -117,7 +118,7 @@ class Readme:
 
     def construct_readme(self):
         directory = os.path.basename(
-            os.path.dirname(os.path.abspath(self.variables_path))
+            os.path.dirname(os.path.abspath(self.variables_file))
         )
         readme_template = [
             f"module {directory} {{",
@@ -134,8 +135,8 @@ class Readme:
 
         readme_template.append("}")
 
-        if os.path.exists(self.readme_path):
-            with open(self.readme_path, "r") as file:
+        if os.path.exists(self.readme_file):
+            with open(self.readme_file, "r") as file:
                 content = file.read()
 
             lines = content.split("\n")
@@ -173,6 +174,6 @@ class Readme:
         if readme_template[-1] == "":
             readme_template.pop()
 
-        with open(self.readme_path, "w") as file:
+        with open(self.readme_file, "w") as file:
             file.writelines("%s\n" % item for item in readme_template)
         return True

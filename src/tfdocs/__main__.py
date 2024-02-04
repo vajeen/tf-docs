@@ -27,7 +27,7 @@ from tfdocs import cli
 from tfdocs import readme
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None):
     if argv is None:
         argv = sys.argv
 
@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"tfdoc {cli.get_version()}")
         sys.exit(0)
 
-    rd = readme.Readme(options.filename, options.readme_file, options.variables_file)
+    rd = readme.Readme(options.readme_file, options.variables_file)
     if not options.dry_run and options.format:
         rd.write_variables()
         if rd.get_variables_changed():
@@ -52,9 +52,15 @@ def main(argv: list[str] | None = None) -> int:
             rd.print_variables_file()
             print("\n")
             if not rd.get_variables_changed():
-                print(f"** No changes to be made to {options.variables_file} **")
+                report_and_exit(
+                    status,
+                    options.readme_file,
+                    options.variables_file,
+                    options.format,
+                    options.dry_run,
+                )
         rd.print_readme()
-        exit_message(
+        report_and_exit(
             status,
             options.readme_file,
             options.variables_file,
@@ -66,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
     if rd.get_readme_changed():
         status["readme"] = True
 
-    exit_message(
+    report_and_exit(
         status,
         options.readme_file,
         options.variables_file,
@@ -75,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
 
-def exit_message(status, readme_file, variables_file, format_variables, dry_run):
+def report_and_exit(status: [], readme_file, variables_file, format_variables, dry_run):
     changed_files = []
     unchanged_files = []
     msg = ""

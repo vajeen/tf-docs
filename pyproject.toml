@@ -2,9 +2,21 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[build.targets.sdist]
+include = ["src/tfdocs"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tfdocs"]
+
+[tool.hatch.build.target.sdist.force-include]
+"src/cli.py" = "src/tfdocs/cli.py"
+
+[project.scripts]
+tfdocs = "tfdocs.__main__:main"
+
 [project]
-name = "tfdoc"
-version = "0.0.1"
+name = "tfdocs"
+version = "0.1.0"
 authors = [
   { name="Vajeen Karunathilaka", email="vajeen@gmail.com" },
 ]
