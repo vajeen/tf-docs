@@ -18,10 +18,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
 from __future__ import annotations
 
 import errno
+import os
 import sys
 from rich.console import Console
 from tfdocs import cli
@@ -41,15 +41,19 @@ def main(argv: list[str] | None = None):
         print(f"tfdoc {cli.get_version()}")
         sys.exit(0)
 
-    rd = readme.Readme(options.readme_file, options.variables_file)
+    module_name = (
+        options.module_name if options.module_name else os.getcwd().split("/")[-1]
+    )
+
+    rd = readme.Readme(options.readme_file, options.variables_file, module_name)
     if not options.dry_run and options.format:
         rd.write_variables()
 
     if options.dry_run:
         if options.format:
             rd.print_variables_file()
-            print("\n")
             if not rd.get_status()["variables"]:
+                rd.print_readme()
                 report_and_exit(
                     rd.get_status(),
                     options.readme_file,
@@ -97,14 +101,17 @@ def report_and_exit(status: [], readme_file, variables_file, format_variables, d
             unchanged_files.append(variables_file)
 
     if changed_files:
-        msg += f"{' and '.join([f'[purple][bold]{file}[/][/]' for file in changed_files])} {verb} { '[yellow]changed[/]' if dry_run else '[green]updated[/]'}"
+        msg += f"{' and '.join([f'[purple][bold]{file}[/][/]' for file in changed_files])} {verb} { '[yellow]changed[/]' if dry_run else '[red]updated[/]'}"
+        code = 2
         if unchanged_files:
             msg += f", [green]no changes[/] to be made to {' or '.join([f'[purple][bold]{file}[/][/]' for file in unchanged_files])}"
+            code = 1
     else:
         msg += f"[green]No changes[/] to be made to {' or '.join([f'[purple][bold]{file}[/][/]' for file in unchanged_files])}"
+        code = 0
 
     console.print(msg)
-    sys.exit(0)
+    sys.exit(code)
 
 
 def _cli_entrypoint() -> None:

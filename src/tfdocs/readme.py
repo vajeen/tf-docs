@@ -11,7 +11,11 @@ from rich.console import Console
 
 
 class Readme:
-    def __init__(self, readme_file, variables_file):
+    def __init__(
+        self, readme_file, variables_file, module_name=None, module_source=None
+    ):
+        self.module_name = module_name
+        self.module_source = module_source
         self.readme_content: str
         self.variables_content = []
         self.readme_changed = True
@@ -120,25 +124,29 @@ class Readme:
         }
 
     def construct_readme(self):
-        directory = os.path.basename(
-            os.path.dirname(os.path.abspath(self.variables_file))
-        )
-        readme_template = [
+        readme_content = [
             "```",
-            f'module {directory} {{',
-            f'  source = "{get_module_url()}"',
+            f"module {self.module_name} {{",
+            f'  source = "{get_module_url() if self.module_source is None else self.module_source}"',
         ]
 
         for item in self.sorted_variables:
             spaces = " " * (
                 self.str_len - len(f'  {item["name"]} = <{item["type"]}>') + 2
             )
-            readme_template.append(
-                f'  {item["name"]} = <{item["type"].upper()}> {spaces} # {item["description"]}'
+            description = (
+                item["description"][1:-1]
+                if item["description"].startswith('"')
+                and item["description"].endswith('"')
+                else item["description"]
             )
 
-        readme_template.append("}")
-        readme_template.append("```")
+            readme_content.append(
+                f'  {item["name"]} = <{item["type"].upper()}> {spaces} # {description}'
+            )
+
+        readme_content.append("}")
+        readme_content.append("```")
 
         if os.path.exists(self.readme_file):
             with open(self.readme_file, "r") as file:
@@ -158,17 +166,18 @@ class Readme:
             lines_constructed = lines.copy()
             if start_index is not None and end_index is not None:
                 del lines_constructed[start_index + 1 : end_index]
-                lines_constructed[start_index + 1 : start_index + 1] = readme_template
+                lines_constructed[start_index + 1 : start_index + 1] = readme_content
 
                 # Check if the README.md file has changed
                 if lines_constructed == lines:
                     self.readme_changed = False
-            else:
-                return readme_template
 
-            return lines_constructed
-
-        return readme_template
+                return lines_constructed
+        return (
+            [f"# {self.module_name} module", "", "<!-- TFDOC START -->"]
+            + readme_content
+            + ["<!-- TFDOC END -->", ""]
+        )
 
     def print_readme(self):
         self.console.print("[purple]--- README.md ---[/]")
@@ -176,12 +185,12 @@ class Readme:
             print(line)
 
     def write_readme(self):
-        readme_template = self.construct_readme()
+        readme_content = self.construct_readme()
 
         # Remove extra empty line
-        if readme_template[-1] == "":
-            readme_template.pop()
+        if readme_content[-1] == "":
+            readme_content.pop()
 
         with open(self.readme_file, "w") as file:
-            file.writelines("%s\n" % item for item in readme_template)
+            file.writelines("%s\n" % item for item in readme_content)
         return True
