@@ -1,6 +1,6 @@
 # TF-Doc
 
-``tfdocs` lets you generate `README.md` for Terraform modules based on `variables.tf`.
+`tfdocs` lets you generate `README.md` for Terraform modules based on `variables.tf`.
 Additionally, it can sort variable definitions.
 
 # Usage
@@ -23,7 +23,7 @@ Additionally, it can sort variable definitions.
     # End of README
 
 
-**Note**: ``tfdocs` overwrite an existing README.md file. It's always good to use `--dry-run` first.
+**Note**: `tfdocs` overwrite an existing README.md file. It's always good to use `--dry-run` first.
     
 Flags:
 
@@ -32,4 +32,4 @@ Flags:
 
 # Authors
 
-tfdocs is created and maintained by [vajeen].
+`tfdocs` is created and maintained by [vajeen].
