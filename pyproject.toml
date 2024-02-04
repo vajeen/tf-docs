@@ -14,15 +14,22 @@ packages = ["src/tfdocs"]
 [project.scripts]
 tfdocs = "tfdocs.__main__:main"
 
+[tool.hatch.version]
+path = "src/tfdocs/version.py"
+
 [project]
 name = "tfdocs"
-version = "0.1.1"
+dependencies = [
+    "rich==13.3.4",
+    "GitPython==3.1.30"
+]
+dynamic = ["version"]
 authors = [
   { name="Vajeen Karunathilaka", email="vajeen@gmail.com" },
 ]
 description = "Documentation generator for Terraform modules"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
