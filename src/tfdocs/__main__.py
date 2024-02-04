@@ -32,7 +32,6 @@ def main(argv: list[str] | None = None):
         argv = sys.argv
 
     options = cli.get_parser(argv[1:])
-    status = {"variables": False, "readme": False}
 
     for k, v in options.__dict__.items():
         setattr(options, k, v)
@@ -44,24 +43,23 @@ def main(argv: list[str] | None = None):
     rd = readme.Readme(options.readme_file, options.variables_file)
     if not options.dry_run and options.format:
         rd.write_variables()
-        if rd.get_variables_changed():
-            status["variables"] = True
 
     if options.dry_run:
         if options.format:
             rd.print_variables_file()
             print("\n")
-            if not rd.get_variables_changed():
+            if not rd.get_status()["variables"]:
                 report_and_exit(
-                    status,
+                    rd.get_status(),
                     options.readme_file,
                     options.variables_file,
                     options.format,
                     options.dry_run,
                 )
+
         rd.print_readme()
         report_and_exit(
-            status,
+            rd.get_status(),
             options.readme_file,
             options.variables_file,
             options.format,
@@ -69,11 +67,9 @@ def main(argv: list[str] | None = None):
         )
 
     rd.write_readme()
-    if rd.get_readme_changed():
-        status["readme"] = True
 
     report_and_exit(
-        status,
+        rd.get_status(),
         options.readme_file,
         options.variables_file,
         options.format,
