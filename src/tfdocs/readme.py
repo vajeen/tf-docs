@@ -1,13 +1,15 @@
-import re
 import os
+import re
 import sys
+
+from rich.console import Console
+
 from tfdocs.utils import (
     count_blocks,
     match_type_constructors,
     construct_tf_file,
     get_module_url,
 )
-from rich.console import Console
 
 
 class Readme:
@@ -157,12 +159,12 @@ class Readme:
             end_index = None
 
             for i, line in enumerate(lines):
-                if "<!-- TFDOC START -->" in line:
+                if "<!-- TFDOCS START -->" in line:
                     start_index = i
-                elif "<!-- TFDOC END -->" in line:
+                elif "<!-- TFDOCS END -->" in line:
                     end_index = i
 
-            # Insert between TFDOC markers
+            # Insert between TFDOCS markers
             lines_constructed = lines.copy()
             if start_index is not None and end_index is not None:
                 del lines_constructed[start_index + 1 : end_index]
@@ -174,9 +176,9 @@ class Readme:
 
                 return lines_constructed
         return (
-            [f"# {self.module_name} module", "", "<!-- TFDOC START -->"]
+            [f"# {self.module_name} module", "", "<!-- TFDOCS START -->"]
             + readme_content
-            + ["<!-- TFDOC END -->", ""]
+            + ["<!-- TFDOCS END -->", ""]
         )
 
     def print_readme(self):
