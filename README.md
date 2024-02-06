@@ -91,3 +91,5 @@ to `./modules/{CURRENT_DIRECTORY}`.
 # Authors
 
 `tfdocs` is created and maintained by [vajeen].
+
+[vajeen]: https://github.com/vajeen
