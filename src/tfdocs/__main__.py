@@ -23,7 +23,9 @@ from __future__ import annotations
 import errno
 import os
 import sys
+
 from rich.console import Console
+
 from tfdocs import cli
 from tfdocs import readme
 
@@ -38,7 +40,7 @@ def main(argv: list[str] | None = None):
         setattr(options, k, v)
 
     if options.version:
-        print(f"tfdoc {cli.get_version()}")
+        print(f"tfdocs {cli.get_version()}")
         sys.exit(0)
 
     module_name = (
@@ -101,7 +103,7 @@ def report_and_exit(status: [], readme_file, variables_file, format_variables, d
             unchanged_files.append(variables_file)
 
     if changed_files:
-        msg += f"{' and '.join([f'[purple][bold]{file}[/][/]' for file in changed_files])} {verb} { '[yellow]changed[/]' if dry_run else '[red]updated[/]'}"
+        msg += f"{' and '.join([f'[purple][bold]{file}[/][/]' for file in changed_files])} {verb} {'[yellow]changed[/]' if dry_run else '[red]updated[/]'}"
         code = 2
         if unchanged_files:
             msg += f", [green]no changes[/] to be made to {' or '.join([f'[purple][bold]{file}[/][/]' for file in unchanged_files])}"

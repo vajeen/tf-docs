@@ -1,5 +1,6 @@
-import git
 import os
+
+import git
 
 
 def count_blocks(string):
@@ -70,7 +71,7 @@ def construct_tf_file(content):
     return file_content.rstrip() + "\n"
 
 
-def get_module_url():
+def get_module_url(module_name):
     try:
         repo = git.Repo(search_parent_directories=True)
         repo_root = repo.git.rev_parse("--show-toplevel")
@@ -78,4 +79,4 @@ def get_module_url():
         rel_path = os.path.relpath(current_path, repo_root)
         return f"{repo.remotes.origin.url}//{rel_path}?ref=<TAG>"
     except git.exc.InvalidGitRepositoryError:
-        return os.getcwd()
+        return f"./modules/{module_name}"

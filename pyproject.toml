@@ -28,7 +28,7 @@ dependencies = [
 dynamic = ["version"]
 
 authors = [
-  { name="Vajeen Karunathilaka", email="vajeen@gmail.com" },
+    { name = "Vajeen Karunathilaka", email = "vajeen@gmail.com" },
 ]
 
 description = "Documentation generator for Terraform modules"
@@ -42,5 +42,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/vajeen/tfdoc"
-Issues = "https://github.com/vajeen/tfdoc/issues"
+Homepage = "https://github.com/vajeen/tfdocs"
+Issues = "https://github.com/vajeen/tfdocs/issues"
