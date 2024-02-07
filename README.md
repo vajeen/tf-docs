@@ -18,7 +18,8 @@ Additionally, it can sort variable definitions.
     --dry-run             Show the output without writing to the file
     --version
 
-## Variables file (Default: variables.tf)
+## Input file
+**Default:** `variables.tf`
 
 All the input variables of the module must be defined in a single file. By default `tfdocs` will look for a file
 named `variables.tf` in the current directory. Alternatively a custom file can be specified using the `--variables`
@@ -42,11 +43,12 @@ variable "my_list" {
 }
 ```
 
-### Format `variables.tf`
+#### Format `variables.tf`
 
 You can use the `-f` flag to format the `variables.tf` file. This will sort the variables in alphabetical order.
 
-## Generated Readme file (Default: README.md)
+## Generated Readme file
+**Default:** `README.md`
 
 The module expects to have a `README.md` file in the current directory. If the file does not exist, `tfdocs` will create
 one. Alternatively, a custom file can be specified using the `--readme` flag.
@@ -76,17 +78,16 @@ Custom content
 Markers:
 `<!-- TFDOCS START -->` and `<!-- TFDOCS END -->`
 
-## Module Source (Default: git-remote-origin)
+## Module Source
+**Default:** `git-remote-origin//<subfolder>?ref=<TAG>`
 
-By default, if the module is in a Git repository, `tfdocs` will utilize the remote origin to generate the source URL.
-
-### Example
-`git://github.com/<your_name>/<your_repo>.git//<subfolder>?ref=<TAG>`
+By default, if the module is in a Git repository, `tfdocs` will utilize the remote origin to generate the source URL
+(`git://github.com/<your_name>/<your_repo>.git//<subfolder>?ref=<TAG>`). 
 
 Otherwise, either the source URL can be specified using the `--source` flag or if not provided it will default
 to `./modules/{CURRENT_DIRECTORY}`.
 
-**Note**: `tfdocs` overwrite an existing README.md file. It's always good to use `--dry-run` first.
+> **Note**: `tfdocs` overwrite an existing README.md file. It's always good to use `--dry-run` first.
 
 # Authors
 
