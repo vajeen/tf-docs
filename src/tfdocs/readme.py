@@ -153,8 +153,14 @@ class Readme:
             )
             description = (
                 item["description"][1:-1]
-                if item["description"].startswith('"')
-                and item["description"].endswith('"')
+                if (
+                    item["description"].startswith('"')
+                    or item["description"].startswith("'")
+                )
+                and (
+                    item["description"].endswith('"')
+                    or item["description"].endswith("'")
+                )
                 else item["description"]
             )
 

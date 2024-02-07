@@ -1,5 +1,5 @@
 import os
-
+import copy
 import git
 
 
@@ -65,8 +65,9 @@ def construct_tf_variable(content):
 
 
 def construct_tf_file(content):
+    content_copy = copy.deepcopy(content)
     file_content = ""
-    for content in content:
+    for content in content_copy:
         file_content += construct_tf_variable(content)
     return file_content.rstrip() + "\n"
 
