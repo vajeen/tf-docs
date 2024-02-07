@@ -118,7 +118,7 @@ class Readme:
 
             self.sorted_variables = sorted(self.variables, key=lambda k: k["name"])
 
-            if construct_tf_file(self.sorted_variables) == file_content:
+            if construct_tf_file(self.sorted_variables).strip() == file_content.strip():
                 self.variables_changed = False
         except FileNotFoundError:
             self.console.print(
