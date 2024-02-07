@@ -108,7 +108,7 @@ class Readme:
             if construct_tf_file(self.sorted_variables) == file_content:
                 self.variables_changed = False
         except FileNotFoundError:
-            print("variables.tf file not found")
+            self.console.print(f"[red]ERROR:[/] Cannot find {self.variables_file} in current directory")
             sys.exit(-1)
 
     def write_variables(self):
@@ -129,7 +129,7 @@ class Readme:
         readme_content = [
             "```",
             f"module {self.module_name} {{",
-            f'  source = "{get_module_url() if self.module_source is None else self.module_source}"',
+            f'  source = "{get_module_url(self.module_name) if self.module_source is None else self.module_source}"',
         ]
 
         for item in self.sorted_variables:

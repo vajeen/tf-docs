@@ -87,33 +87,20 @@ def main(argv: list[str] | None = None):
 def report_and_exit(status: [], readme_file, variables_file, format_variables, dry_run):
     console = Console()
     changed_files = []
-    unchanged_files = []
-    msg = ""
-    verb = "will be" if dry_run else "has been"
 
     if status["readme"]:
         changed_files.append(readme_file)
-    else:
-        unchanged_files.append(readme_file)
 
-    if format_variables:
-        if status["variables"]:
-            changed_files.append(variables_file)
-        else:
-            unchanged_files.append(variables_file)
+    if format_variables and status["variables"]:
+        changed_files.append(variables_file)
+
+    changed_list = f"{', '.join([f'{file}' for file in changed_files])}" if changed_files else "0"
+    console.print(f"[green]Updated:[/] {changed_list}" if dry_run else f"[yellow]Pending changes:[/] {changed_list}")
 
     if changed_files:
-        msg += f"{' and '.join([f'[purple][bold]{file}[/][/]' for file in changed_files])} {verb} {'[yellow]changed[/]' if dry_run else '[red]updated[/]'}"
-        code = 2
-        if unchanged_files:
-            msg += f", [green]no changes[/] to be made to {' or '.join([f'[purple][bold]{file}[/][/]' for file in unchanged_files])}"
-            code = 1
+        sys.exit(-1)
     else:
-        msg += f"[green]No changes[/] to be made to {' or '.join([f'[purple][bold]{file}[/][/]' for file in unchanged_files])}"
-        code = 0
-
-    console.print(msg)
-    sys.exit(code)
+        sys.exit(0)
 
 
 def _cli_entrypoint() -> None:
