@@ -19,7 +19,6 @@ class Readme:
         self.module_name = module_name
         self.module_source = module_source
         self.readme_content: str
-        self.variables_content = []
         self.readme_changed = True
         self.variables_changed = True
         self.readme_file = readme_file
@@ -29,14 +28,11 @@ class Readme:
 
         try:
             with open(self.variables_file, "r") as file:
-                file_content = file.read()
+                file_content = file.read().strip()
 
-            self.variables_content = file_content.split("\n")
-
-            pattern = r'variable\s+"?(\w+)"?\s*{(.*?)\n}'
-
-            matches = re.findall(pattern, file_content, re.DOTALL)
-
+            matches = re.findall(
+                r'\s*variable\s+"?(\w+)"?\s*{(.*?)\n\s*}', file_content, re.DOTALL
+            )
             self.variables = []
 
             for match in matches:
@@ -51,44 +47,61 @@ class Readme:
                 for line in content.split("\n"):
                     stripped_line = line.strip()
 
-                    type_match = stripped_line if "type" in stripped_line else None
-                    if type_match or cont == "type":
-                        if (
-                            len(f'  {name} = <{type_match.split("=")[1].strip()}>')
-                            > self.str_len
-                        ):
-                            self.str_len = len(
-                                f'  {name} = <{type_match.split("=")[1].strip()}>'
+                    if stripped_line:
+                        type_match = (
+                            stripped_line
+                            if re.match(r"^\s*type\s*=\s*", stripped_line)
+                            else None
+                        )
+                        if type_match or cont == "type":
+                            if (
+                                len(f'  {name} = <{type_match.split("=")[1].strip()}>')
+                                > self.str_len
+                            ):
+                                self.str_len = len(
+                                    f'  {name} = <{type_match.split("=")[1].strip()}>'
+                                )
+                            type_content += (
+                                stripped_line
+                                if cont
+                                else type_match.split("=")[1].strip()
                             )
-                        type_content += (
-                            stripped_line if cont else type_match.split("=")[1].strip()
-                        )
-                        cont = "type" if count_blocks(type_content) else None
 
-                    default_match = (
-                        stripped_line if "default" in stripped_line else None
-                    )
-                    if default_match or cont == "default":
-                        default_content += (
-                            stripped_line
-                            if cont
-                            else default_match.split("=")[1].strip()
-                        )
-                        if match_type_constructors(default_content):
-                            cont = "default" if count_blocks(default_content) else None
+                            cont = "type" if count_blocks(type_content) else None
 
-                    description_match = (
-                        stripped_line if "description" in stripped_line else None
-                    )
-                    if description_match or cont == "description":
-                        description_content += (
+                        default_match = (
                             stripped_line
-                            if cont
-                            else description_match.split("=")[1].strip()
+                            if re.match(r"^\s*default\s*=\s*", stripped_line)
+                            else None
                         )
-                        cont = (
-                            "description" if count_blocks(description_content) else None
+
+                        if default_match or cont == "default":
+                            default_content += (
+                                stripped_line
+                                if cont
+                                else default_match.split("=")[1].strip()
+                            )
+                            if match_type_constructors(default_content):
+                                cont = (
+                                    "default" if count_blocks(default_content) else None
+                                )
+
+                        description_match = (
+                            stripped_line
+                            if re.match(r"^\s*description\s*=\s*", stripped_line)
+                            else None
                         )
+                        if description_match or cont == "description":
+                            description_content += (
+                                stripped_line
+                                if cont
+                                else description_match.split("=")[1].strip()
+                            )
+                            cont = (
+                                "description"
+                                if count_blocks(description_content)
+                                else None
+                            )
 
                 attributes = {
                     "name": name,
@@ -108,7 +121,9 @@ class Readme:
             if construct_tf_file(self.sorted_variables) == file_content:
                 self.variables_changed = False
         except FileNotFoundError:
-            self.console.print(f"[red]ERROR:[/] Cannot find {self.variables_file} in current directory")
+            self.console.print(
+                f"[red]ERROR:[/] Cannot find {self.variables_file} in current directory"
+            )
             sys.exit(-1)
 
     def write_variables(self):
