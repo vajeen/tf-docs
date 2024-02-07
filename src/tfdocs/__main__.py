@@ -94,12 +94,16 @@ def report_and_exit(status: [], readme_file, variables_file, format_variables, d
     if format_variables and status["variables"]:
         changed_files.append(variables_file)
 
-    changed_list = f"{', '.join([f'{file}' for file in changed_files])}" if changed_files else "0"
-    console.print(f"[green]Updated:[/] {changed_list}" if dry_run else f"[yellow]Pending changes:[/] {changed_list}")
-
     if changed_files:
+        changed_list = f"{', '.join([f'{file}' for file in changed_files])}"
+        console.print(
+            f"[green]Updated:[/] {changed_list}"
+            if not dry_run
+            else f"[yellow]Pending changes:[/] {changed_list}"
+        )
         sys.exit(-1)
     else:
+        console.print("[cyan]Nothing to update!!![/]")
         sys.exit(0)
 
 

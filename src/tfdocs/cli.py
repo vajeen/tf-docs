@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from tfdocs import __version__
 
+
 @dataclass
 class Options:
     format: bool = True
@@ -73,6 +74,7 @@ def get_parser(arguments: list[str]) -> Options:
 
     options = Options(**vars(parser.parse_args(arguments)))
     return options
+
 
 def get_version() -> str | None:
     return __version__
