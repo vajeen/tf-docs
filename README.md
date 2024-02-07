@@ -11,11 +11,11 @@ Additionally, it can sort variable definitions.
 
     -h, --help            Show this help message and exit
     --name, -n            Specify a custom name for the module
-    --readme              Specify a custom name for README.md file
-    --variables           Specify a custom name for variables.tf file
+    --readme              Specify the name of the output file (default: README.md)
+    --variables           Specify the name of the file containing variables (default: variables.tf)
     --source SOURCE       Specify a custom source for the module
     -f                    Format and sort variables.tf file
-    --dry-run             Show generated README.md file and variables.tf if format is enabled
+    --dry-run             Show the output without writing to the file
     --version
 
 ## Variables file (Default: variables.tf)
