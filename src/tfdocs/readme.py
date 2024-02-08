@@ -143,7 +143,7 @@ class Readme:
     def construct_readme(self):
         readme_content = [
             "```",
-            f"module {self.module_name} {{",
+            f"module <{self.module_name}> {{",
             f'  source = "{get_module_url(self.module_name) if self.module_source is None else self.module_source}"',
         ]
 

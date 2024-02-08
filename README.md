@@ -63,7 +63,7 @@ one. Alternatively, a custom file can be specified using the `--readme` flag.
 Insert a description of the module here.
 
 <!-- TFDOCS START -->
-module my_module {
+module <my_module> {
 source = "git@github.com:<your_name>/<your_repo>.git//<subfolder>?ref=<TAG>"
 my_list = <LIST(STRING)>    # Description of the list
 my_string = <STRING>        # Description of the string
