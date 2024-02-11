@@ -6,9 +6,9 @@ from rich.console import Console
 
 from tfdocs.utils import (
     count_blocks,
-    match_type_constructors,
     construct_tf_file,
     get_module_url,
+    process_line_block,
 )
 
 
@@ -25,101 +25,61 @@ class Readme:
         self.variables_file = variables_file
         self.str_len = 0
         self.console = Console()
+        self.variables = []
 
         try:
             with open(self.variables_file, "r") as file:
                 file_content = file.read().strip()
 
-            matches = re.findall(
-                r'\s*variable\s+"?(\w+)"?\s*{(.*?)\n\s*}', file_content, re.DOTALL
-            )
-            self.variables = []
-
-            for match in matches:
-                name = match[0]
-                content = match[1]
-                type_content, default_content, description_content, cont = (
-                    "",
-                    "",
-                    "",
-                    None,
-                )
-                for line in content.split("\n"):
-                    stripped_line = line.strip()
-
-                    if stripped_line:
-                        type_match = (
-                            stripped_line
-                            if re.match(r"^\s*type\s*=\s*", stripped_line)
-                            else None
+            block = []
+            match_flag = False
+            for line in file_content.split("\n"):
+                block.append(line)
+                match = re.match(r'\s*variable\s+"?(\w+)"?\s*{\s*', line, re.DOTALL)
+                if match and not match_flag:
+                    name = match.group(1)
+                    match_flag = True
+                if count_blocks(block) and match_flag:
+                    match_flag = False
+                    type_content, default_content, description_content, cont = (
+                        "",
+                        "",
+                        "",
+                        None,
+                    )
+                    for line_block in block:
+                        type_content, cont = process_line_block(
+                            line_block, "type", type_content, cont
                         )
-                        if type_match or cont == "type":
-                            if (
-                                len(f'  {name} = <{type_match.split("=")[1].strip()}>')
-                                > self.str_len
-                            ):
-                                self.str_len = len(
-                                    f'  {name} = <{type_match.split("=")[1].strip()}>'
-                                )
-                            type_content += (
-                                stripped_line
-                                if cont
-                                else type_match.split("=")[1].strip()
-                            )
-
-                            cont = "type" if count_blocks(type_content) else None
-
-                        default_match = (
-                            stripped_line
-                            if re.match(r"^\s*default\s*=\s*", stripped_line)
-                            else None
+                        if type_content:
+                            if len(f"  {name} = <{type_content}>") > self.str_len:
+                                self.str_len = len(f"  {name} = <{type_content}>")
+                        default_content, cont = process_line_block(
+                            line_block, "default", default_content, cont
+                        )
+                        description_content, cont = process_line_block(
+                            line_block, "description", description_content, cont
                         )
 
-                        if default_match or cont == "default":
-                            default_content += (
-                                stripped_line
-                                if cont
-                                else default_match.split("=")[1].strip()
-                            )
-                            if match_type_constructors(default_content):
-                                cont = (
-                                    "default" if count_blocks(default_content) else None
-                                )
+                    block = []
+                    attributes = {
+                        "name": name,
+                        "type": type_content if type_content else "unknown",
+                        "description": description_content
+                        if description_content
+                        else "No description provided",
+                    }
 
-                        description_match = (
-                            stripped_line
-                            if re.match(r"^\s*description\s*=\s*", stripped_line)
-                            else None
-                        )
-                        if description_match or cont == "description":
-                            description_content += (
-                                stripped_line
-                                if cont
-                                else description_match.split("=")[1].strip()
-                            )
-                            cont = (
-                                "description"
-                                if count_blocks(description_content)
-                                else None
-                            )
+                    if default_content:
+                        attributes["default"] = default_content
 
-                attributes = {
-                    "name": name,
-                    "type": type_content if type_content else "unknown",
-                    "description": description_content
-                    if description_content
-                    else "No description provided",
-                }
-
-                if default_content:
-                    attributes["default"] = default_content
-
-                self.variables.append(attributes)
+                    self.variables.append(attributes)
 
             self.sorted_variables = sorted(self.variables, key=lambda k: k["name"])
 
             if construct_tf_file(self.sorted_variables).strip() == file_content.strip():
                 self.variables_changed = False
+
         except FileNotFoundError:
             self.console.print(
                 f"[red]ERROR:[/] Cannot find {self.variables_file} in current directory"
