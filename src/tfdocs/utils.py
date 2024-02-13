@@ -137,7 +137,7 @@ def construct_tf_variable(content):
         f'  default = {content.pop("default")}\n' if "default" in content else ""
     )
 
-    default_str = format_block(default_str) + "\n"
+    default_str = format_block(default_str) + "\n" if format_block(default_str) else ""
     type_str = format_block(content["type"])
 
     template = (
