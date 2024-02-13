@@ -142,7 +142,7 @@ def construct_tf_variable(content):
     )
 
     type_override = (
-        f"#tfdocs: type={content['type_override']}" + "\n"
+        f"  #tfdocs: type={content['type_override']}" + "\n"
         if content["type_override"]
         else ""
     )
@@ -154,7 +154,7 @@ def construct_tf_variable(content):
 
     template = (
         'variable "{name}" {{\n'
-        "  {type_override}"
+        "{type_override}"
         "  type = {type}\n"
         "  description = {description}\n"
         "{default}"
