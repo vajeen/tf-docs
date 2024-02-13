@@ -41,19 +41,35 @@ class Readme:
                     match_flag = True
                 if count_blocks(block) and match_flag:
                     match_flag = False
-                    type_content, default_content, description_content, cont = (
+                    (
+                        type_content,
+                        default_content,
+                        description_content,
+                        type_override,
+                        cont,
+                    ) = (
                         "",
                         "",
                         "",
+                        None,
                         None,
                     )
                     for line_block in block:
                         type_content, cont = process_line_block(
                             line_block, "type", type_content, cont
                         )
-                        if type_content:
-                            if len(f"  {name} = <{type_content}>") > self.str_len:
-                                self.str_len = len(f"  {name} = <{type_content}>")
+
+                        type_override, cont = process_line_block(
+                            line_block, "type_override", type_override, cont
+                        )
+
+                        type_len_content = (
+                            type_override if type_override else type_content
+                        )
+
+                        if type_len_content:
+                            if len(f"  {name} = <{type_len_content}>") > self.str_len:
+                                self.str_len = len(f"  {name} = <{type_len_content}>")
                         default_content, cont = process_line_block(
                             line_block, "default", default_content, cont
                         )
@@ -64,6 +80,7 @@ class Readme:
                     block = []
                     attributes = {
                         "name": name,
+                        "type_override": type_override,
                         "type": type_content if type_content else "unknown",
                         "description": description_content
                         if description_content
@@ -108,9 +125,8 @@ class Readme:
         ]
 
         for item in self.sorted_variables:
-            spaces = " " * (
-                self.str_len - len(f'  {item["name"]} = <{item["type"]}>') + 2
-            )
+            type_str = item["type_override"] if item["type_override"] else item["type"]
+            spaces = " " * (self.str_len - len(f'  {item["name"]} = <{type_str}>') + 2)
             description = (
                 item["description"][1:-1]
                 if (
@@ -125,7 +141,7 @@ class Readme:
             )
 
             readme_content.append(
-                f'  {item["name"]} = <{item["type"].upper()}> {spaces} # {description}'
+                f'  {item["name"]} = <{type_str.upper()}> {spaces} # {description}'
             )
 
         readme_content.append("}")

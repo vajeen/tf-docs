@@ -32,6 +32,10 @@ def count_blocks(data):
 
 def process_line_block(line_block, target_type, content, cont):
     type_match = None
+
+    if target_type == "type_override":
+        target_type = "#\s*tfdocs:\s*type"
+
     if not cont:
         type_match = (
             line_block if re.match(rf"^\s*{target_type}\s*=\s*", line_block) else None
@@ -137,11 +141,20 @@ def construct_tf_variable(content):
         f'  default = {content.pop("default")}\n' if "default" in content else ""
     )
 
-    default_str = format_block(default_str) + "\n" if format_block(default_str) else ""
+    type_override = (
+        f"#tfdocs: type={content['type_override']}" + "\n"
+        if content["type_override"]
+        else ""
+    )
+
+    formatted_default_str = format_block(default_str)
+    default_str = formatted_default_str + "\n" if formatted_default_str else ""
+
     type_str = format_block(content["type"])
 
     template = (
         'variable "{name}" {{\n'
+        "  {type_override}"
         "  type = {type}\n"
         "  description = {description}\n"
         "{default}"
@@ -149,10 +162,11 @@ def construct_tf_variable(content):
     )
 
     return template.format(
-        default=default_str,
+        name=content["name"],
+        type_override=type_override,
         type=type_str,
         description=content["description"],
-        name=content["name"],
+        default=default_str,
     )
 
 
