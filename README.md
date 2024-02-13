@@ -87,6 +87,29 @@ By default, if the module is in a Git repository, `tfdocs` will utilize the remo
 Otherwise, either the source URL can be specified using the `--source` flag or if not provided it will default
 to `./modules/{CURRENT_DIRECTORY}`.
 
+
+## Annotations
+### Override variable type
+
+Use `#tfdocs: type=<TYPE>` to override the variable type. This is useful when the type is not correctly inferred from the variable definition or when you want to customize it.
+
+### Example
+
+**variables.tf**
+
+```hcl
+variable "my_object" {
+  #tfdocs: type = list(object)
+  type = list(object({
+    name = string
+    size = number
+    directory = string
+  }))
+  description = "Description of the string"
+  default = "default"
+}
+```
+
 > **Note**: `tfdocs` overwrite an existing README.md file. It's always good to use `--dry-run` first.
 
 # Authors
