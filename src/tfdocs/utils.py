@@ -118,8 +118,15 @@ def format_block(content):
         content_str = content.rstrip()
         indent = 2
 
+        # Check if the content has braces
+        brace_flag = False
+
+        # Check if the content is not only braces
+        content_flag = 0
+
         for char in content_str:
             if char in start_braces or char in end_braces:
+                brace_flag = True
                 char = char.strip()
                 if char in end_braces:
                     indent -= 2
@@ -129,10 +136,24 @@ def format_block(content):
                     if char in start_braces:
                         indent += 2
                         tmp_content += "\n" + " " * indent
-            elif char == ",":
+            elif char == "," and brace_flag:
                 tmp_content += char + "\n" + " " * indent
             else:
+                if content_flag >= 1 and char.strip() != "":
+                    content_flag = 2
+                elif char == "=":
+                    content_flag = 1
+
                 tmp_content += char
+
+        # If the content is not only braces remove the leading and trailing spaces
+        if content_flag == 1:
+            tmp_content_left, tmp_content_right = tmp_content.split("=", 1)
+            tmp_content_right = (
+                tmp_content_right.replace("\n", "").replace("\r", "").replace(" ", "")
+            )
+            tmp_content = tmp_content_left + "= " + tmp_content_right
+
     return tmp_content
 
 
