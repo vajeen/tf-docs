@@ -149,7 +149,9 @@ def format_block(content):
         # If the content is not only braces remove the leading and trailing spaces
         if content_flag == 1:
             tmp_content_left, tmp_content_right = tmp_content.split("=", 1)
-            tmp_content_right = tmp_content_right.replace('\n', '').replace('\r', '').replace(" ", "")
+            tmp_content_right = (
+                tmp_content_right.replace("\n", "").replace("\r", "").replace(" ", "")
+            )
             tmp_content = tmp_content_left + "= " + tmp_content_right
 
     return tmp_content
