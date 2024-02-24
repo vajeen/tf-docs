@@ -7,17 +7,18 @@ from rich.console import Console
 from tfdocs.utils import (
     count_blocks,
     construct_tf_file,
-    get_module_url,
+    generate_source,
     process_line_block,
 )
 
 
 class Readme:
     def __init__(
-        self, readme_file, variables_file, module_name=None, module_source=None
+        self, readme_file, variables_file, module_name=None, module_source=None, module_source_git=False
     ):
         self.module_name = module_name
         self.module_source = module_source
+        self.module_source_git = module_source_git
         self.readme_content: str
         self.readme_changed = True
         self.variables_changed = True
@@ -121,7 +122,7 @@ class Readme:
         readme_content = [
             "```",
             f"module <{self.module_name}> {{",
-            f'  source = "{get_module_url(self.module_name) if self.module_source is None else self.module_source}"',
+            f'  source = "{generate_source(self.module_name, self.module_source, self.module_source_git)}"',
         ]
 
         for item in self.sorted_variables:

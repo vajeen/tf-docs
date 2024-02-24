@@ -199,12 +199,17 @@ def construct_tf_file(content):
     return file_content.rstrip() + "\n"
 
 
-def get_module_url(module_name):
-    try:
-        repo = git.Repo(search_parent_directories=True)
-        repo_root = repo.git.rev_parse("--show-toplevel")
-        current_path = os.path.abspath(os.getcwd())
-        rel_path = os.path.relpath(current_path, repo_root)
-        return f"{repo.remotes.origin.url}//{rel_path}?ref=<TAG>"
-    except git.exc.InvalidGitRepositoryError:
-        return f"./modules/{module_name}"
+def generate_source(module_name, source, source_git):
+    if source and not source_git:
+        return source
+    else:
+        try:
+            repo = git.Repo(search_parent_directories=True)
+            repo_root = repo.git.rev_parse("--show-toplevel")
+            current_path = os.path.abspath(os.getcwd())
+            rel_path = os.path.relpath(current_path, repo_root)
+            if source:
+                return f"{source}//{rel_path}?ref=<TAG>"
+            return f"{repo.remotes.origin.url}//{rel_path}?ref=<TAG>"
+        except git.exc.InvalidGitRepositoryError:
+            return f"./modules/{module_name}"
