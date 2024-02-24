@@ -14,6 +14,7 @@ Additionally, it can sort variable definitions.
     --readme              Specify the name of the output file (default: README.md)
     --variables           Specify the name of the file containing variables (default: variables.tf)
     --source SOURCE       Specify a custom source for the module
+    --git-source          Only to be used together with --source to specify the source is a git repository. If true, sub directory and a place holder TAG will be appended to the source
     -f                    Format and sort variables.tf file
     --dry-run             Show the output without writing to the file
     --version

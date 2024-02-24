@@ -47,7 +47,7 @@ def main(argv: list[str] | None = None):
         options.module_name if options.module_name else os.getcwd().split("/")[-1]
     )
 
-    rd = readme.Readme(options.readme_file, options.variables_file, module_name)
+    rd = readme.Readme(options.readme_file, options.variables_file, module_name, options.source, options.git_source)
     if not options.dry_run and options.format:
         rd.write_variables()
 

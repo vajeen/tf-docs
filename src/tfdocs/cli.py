@@ -14,6 +14,7 @@ class Options:
     variables_file: str = "variables.tf"
     readme_file: str = "README.md"
     source: str | None = None
+    git_source: bool = False
     module_name: str | None = None
 
 
@@ -50,6 +51,13 @@ def get_parser(arguments: list[str]) -> Options:
         action="store",
         default=None,
         help="Specify a custom source for the module",
+    )
+    parser.add_argument(
+        "--git-source",
+        dest="git_source",
+        default=False,
+        action="store_true",
+        help="Only to be used together with --source to specify the source is a git repository. If true, sub directory and a place holder TAG will be appended to the source",
     )
     parser.add_argument(
         "-f",
