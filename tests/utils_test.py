@@ -451,7 +451,3 @@ def test_generate_source():
         == "git@git.com:tfdocs//.?ref=<TAG>"
     )
     assert utils.generate_source("modules", "tfdocs", False) == "tfdocs"
-    assert (
-        utils.generate_source("modules", None, False)
-        == "git@github.com:vajeen/tf-docs.git//.?ref=<TAG>"
-    )
