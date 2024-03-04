@@ -2,30 +2,30 @@ from tfdocs import utils
 
 
 def test_count_blocks():
-    assert utils.count_blocks("()") == True
-    assert utils.count_blocks("()(") == False
-    assert utils.count_blocks("()()") == True
-    assert utils.count_blocks("()()(") == False
-    assert utils.count_blocks("{}") == True
-    assert utils.count_blocks("{}{") == False
-    assert utils.count_blocks("{}{}") == True
-    assert utils.count_blocks("{}{}{") == False
-    assert utils.count_blocks("[]") == True
-    assert utils.count_blocks("[][") == False
-    assert utils.count_blocks("[][]") == True
-    assert utils.count_blocks("[][][") == False
-    assert utils.count_blocks("<>") == True
-    assert utils.count_blocks("<><") == False
-    assert utils.count_blocks("<><>") == True
-    assert utils.count_blocks("<><><") == False
-    assert utils.count_blocks("(){}[]<>") == True
-    assert utils.count_blocks("({[]})") == True
-    assert utils.count_blocks("({[]})(") == False
-    assert utils.count_blocks("({[]})()") == True
-    assert utils.count_blocks("({[]})()(") == False
-    assert utils.count_blocks("({[]})(){}") == True
-    assert utils.count_blocks("({[]})(){}{") == False
-    assert utils.count_blocks("({[]})(){}{}") == True
+    assert utils.count_blocks("()") is True
+    assert utils.count_blocks("()(") is False
+    assert utils.count_blocks("()()") is True
+    assert utils.count_blocks("()()(") is False
+    assert utils.count_blocks("{}") is True
+    assert utils.count_blocks("{}{") is False
+    assert utils.count_blocks("{}{}") is True
+    assert utils.count_blocks("{}{}{") is False
+    assert utils.count_blocks("[]") is True
+    assert utils.count_blocks("[][") is False
+    assert utils.count_blocks("[][]") is True
+    assert utils.count_blocks("[][][") is False
+    assert utils.count_blocks("<>") is True
+    assert utils.count_blocks("<><") is False
+    assert utils.count_blocks("<><>") is True
+    assert utils.count_blocks("<><><") is False
+    assert utils.count_blocks("(){}[]<>") is True
+    assert utils.count_blocks("({[]})") is True
+    assert utils.count_blocks("({[]})(") is False
+    assert utils.count_blocks("({[]})()") is True
+    assert utils.count_blocks("({[]})()(") is False
+    assert utils.count_blocks("({[]})(){}") is True
+    assert utils.count_blocks("({[]})(){}{") is False
+    assert utils.count_blocks("({[]})(){}{}") is True
 
 
 def test_process_line_block():
@@ -48,30 +48,30 @@ def test_process_line_block():
 
 
 def test_match_type_constructors():
-    assert utils.match_type_constructors("list") == True
-    assert utils.match_type_constructors("set") == True
-    assert utils.match_type_constructors("map") == True
-    assert utils.match_type_constructors("object") == True
-    assert utils.match_type_constructors("tuple") == True
-    assert utils.match_type_constructors("list[]") == True
-    assert utils.match_type_constructors("set{}") == True
-    assert utils.match_type_constructors("map{}") == True
-    assert utils.match_type_constructors("object()") == True
-    assert utils.match_type_constructors("tuple()") == True
-    assert utils.match_type_constructors("list[") == True
-    assert utils.match_type_constructors("set{") == True
-    assert utils.match_type_constructors("map{") == True
-    assert utils.match_type_constructors("object(") == True
-    assert utils.match_type_constructors("tuple(") == True
-    assert utils.match_type_constructors("list[()") == True
-    assert utils.match_type_constructors("set{}(") == True
-    assert utils.match_type_constructors("listt") == False
-    assert utils.match_type_constructors("listt[()") == False
-    assert utils.match_type_constructors("json") == False
-    assert utils.match_type_constructors("const") == False
-    assert utils.match_type_constructors("const ") == False
-    assert utils.match_type_constructors("array") == False
-    assert utils.match_type_constructors("dict") == False
+    assert utils.match_type_constructors("list") is True
+    assert utils.match_type_constructors("set") is True
+    assert utils.match_type_constructors("map") is True
+    assert utils.match_type_constructors("object") is True
+    assert utils.match_type_constructors("tuple") is True
+    assert utils.match_type_constructors("list[]") is True
+    assert utils.match_type_constructors("set{}") is True
+    assert utils.match_type_constructors("map{}") is True
+    assert utils.match_type_constructors("object()") is True
+    assert utils.match_type_constructors("tuple()") is True
+    assert utils.match_type_constructors("list[") is True
+    assert utils.match_type_constructors("set{") is True
+    assert utils.match_type_constructors("map{") is True
+    assert utils.match_type_constructors("object(") is True
+    assert utils.match_type_constructors("tuple(") is True
+    assert utils.match_type_constructors("list[()") is True
+    assert utils.match_type_constructors("set{}(") is True
+    assert utils.match_type_constructors("listt") is False
+    assert utils.match_type_constructors("listt[()") is False
+    assert utils.match_type_constructors("json") is False
+    assert utils.match_type_constructors("const") is False
+    assert utils.match_type_constructors("const ") is False
+    assert utils.match_type_constructors("array") is False
+    assert utils.match_type_constructors("dict") is False
 
 
 def test_format_block():
