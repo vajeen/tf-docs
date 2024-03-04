@@ -58,11 +58,12 @@ def process_line_block(line_block, target_type, content, cont):
 def match_type_constructors(string):
     type_constructors = ["list", "set", "map", "object", "tuple"]
 
-    for sub in type_constructors:
-        if sub in string:
-            return True
+    pattern = r"\b(" + "|".join(type_constructors) + r")\b"
 
-    return False
+    if re.search(pattern, string):
+        return True
+    else:
+        return False
 
 
 def format_block(content):
