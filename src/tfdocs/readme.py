@@ -14,7 +14,12 @@ from tfdocs.utils import (
 
 class Readme:
     def __init__(
-        self, readme_file, variables_file, module_name=None, module_source=None, module_source_git=False
+        self,
+        readme_file,
+        variables_file,
+        module_name=None,
+        module_source=None,
+        module_source_git=False,
     ):
         self.module_name = module_name
         self.module_source = module_source
