@@ -90,7 +90,7 @@ class Readme:
                         "type": type_content if type_content else "unknown",
                         "description": description_content
                         if description_content
-                        else "No description provided",
+                        else '"No description provided"',
                     }
 
                     if default_content:
