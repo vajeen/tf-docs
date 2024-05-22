@@ -26,6 +26,14 @@ def test_count_blocks():
     assert utils.count_blocks("({[]})(){}") is True
     assert utils.count_blocks("({[]})(){}{") is False
     assert utils.count_blocks("({[]})(){}{}") is True
+    assert utils.count_blocks(["()"]) is True
+    assert utils.count_blocks(["()","("]) is False
+    assert utils.count_blocks(["()","()"]) is True
+    assert utils.count_blocks(["()","()","("]) is False
+    assert utils.count_blocks(["{}"]) is True
+    assert utils.count_blocks(["{}","{"]) is False
+    assert utils.count_blocks(["{}","{}"]) is True
+    assert utils.count_blocks(["{}","{}","{"]) is False
 
 
 def test_process_line_block():
@@ -81,6 +89,13 @@ def test_process_line_block():
     assert utils.process_line_block(
         "# tfdocs: type=object(", "type_override", "", None
     ) == ("object(", "#\\s*tfdocs:\\s*type")
+
+
+
+    assert utils.process_line_block("  )]", "type", "type = list[(", "type") == (
+        "type = list[()]",
+        None,
+    )
 
 
 def test_match_type_constructors():
@@ -443,7 +458,6 @@ variable "my_var_6" {
 }
 """
     assert utils.construct_tf_file(var7in) == var7out
-
 
 def test_generate_source():
     assert (
