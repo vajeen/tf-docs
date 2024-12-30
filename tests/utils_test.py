@@ -74,6 +74,10 @@ def test_process_line_block():
         "[1,2,3",
         "default",
     )
+    assert utils.process_line_block("default = [\"123 abc:def.ghi -zyx\"]", "default", "[\"123 abc:def.ghi -zyx\"]", None) == (
+        "[\"123 abc:def.ghi -zyx\"]",
+        None
+    )
     assert utils.process_line_block(
         "#tfdocs:type=object()", "type_override", "", None
     ) == ("object()", None)
