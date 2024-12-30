@@ -45,13 +45,12 @@ def process_line_block(line_block, target_type, content, cont):
         if cont:
             content += line_block.strip()
         else:
-            content = line_block.split("=")[1].strip()
+            content = line_block.split("=",1)[1].strip()
 
         if not count_blocks(content):
             cont = target_type
         else:
             cont = None
-
     return content, cont
 
 

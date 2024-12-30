@@ -1,0 +1,12 @@
+venv
+dist
+src/tfdocs/__pycache__
+tests/htmlcov
+tests/junit
+tests/.coverage
+tests/coverage.xml
+tests/__pycache__
+.coverage
+coverage.xml
+junit
+.idea

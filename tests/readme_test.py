@@ -20,6 +20,18 @@ variable "var3" {
   type        = number
   default     = 54
 }
+
+variable "var4" {
+  type        = list(string)
+  default     = ["123 abc:def.ghi -zyx"]
+  description = "This is variable 4"
+}
+
+variable "var5" {
+  type        = list(string)
+  default     = ["v=abc1 include:abc.com include:abc.def.net -all"]
+  description = "This is variable 5"
+}
 """
 
 # Mock data for README.md
@@ -56,7 +68,7 @@ def test_initialization(temp_files):
     assert rd.module_name == "example"
     assert rd.variables_file == variables_file
     assert rd.readme_file == readme_file
-    assert len(rd.variables) == 3
+    assert len(rd.variables) == 5
 
 def test_variable_parsing(temp_files):
     variables_file, readme_file = temp_files
@@ -83,6 +95,20 @@ def test_variable_parsing(temp_files):
             "description": '"No description provided"',
             "default": "54",
         },
+        {
+            "name": "var4",
+            "type_override": None,
+            "type": "list(string)",
+            "description": '"This is variable 4"',
+            "default": '["123 abc:def.ghi -zyx"]',
+        },
+        {
+            "name": "var5",
+            "type_override": None,
+            "type": "list(string)",
+            "description": '"This is variable 5"',
+            "default": '["v=abc1 include:abc.com include:abc.def.net -all"]',
+        },
     ]
 
     assert rd.variables == expected_variables
@@ -108,9 +134,11 @@ def test_construct_readme(temp_files):
         "```",
         "module <example> {",
         '  source = "git@git.com:tfdocs"',
-        '  var1 = <STRING>    # This is variable 1',
-        '  var2 = <NUMBER>    # This is variable 2',
-        '  var3 = <NUMBER>    # No description provided',
+        '  var1 = <STRING>          # This is variable 1',
+        '  var2 = <NUMBER>          # This is variable 2',
+        '  var3 = <NUMBER>          # No description provided',
+        '  var4 = <LIST(STRING)>    # This is variable 4',
+        '  var5 = <LIST(STRING)>    # This is variable 5',
         "}",
         "```",
     ]
@@ -127,7 +155,7 @@ def test_write_readme(temp_files):
         content = f.read()
 
     expected_readme_content = (
-        "# Example module\n\n<!-- TFDOCS START -->\n```\nmodule <example> {\n  source = \"git@git.com:tfdocs\"\n  var1 = <STRING>    # This is variable 1\n  var2 = <NUMBER>    # This is variable 2\n  var3 = <NUMBER>    # No description provided\n}\n```\n<!-- TFDOCS END -->\n"
+        "# Example module\n\n<!-- TFDOCS START -->\n```\nmodule <example> {\n  source = \"git@git.com:tfdocs\"\n  var1 = <STRING>          # This is variable 1\n  var2 = <NUMBER>          # This is variable 2\n  var3 = <NUMBER>          # No description provided\n  var4 = <LIST(STRING)>    # This is variable 4\n  var5 = <LIST(STRING)>    # This is variable 5\n}\n```\n<!-- TFDOCS END -->\n"
     )
 
     assert content.strip() == expected_readme_content.strip()
