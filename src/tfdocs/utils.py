@@ -51,6 +51,7 @@ def process_line_block(line_block, target_type, content, cont):
             cont = target_type
         else:
             cont = None
+
     return content, cont
 
 
