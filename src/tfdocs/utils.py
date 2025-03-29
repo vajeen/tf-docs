@@ -6,35 +6,27 @@ import git
 
 
 def count_blocks(data):
-    if isinstance(data, list):
-        string = "".join(data)
-    else:
-        string = data
+    string = "".join(data) if isinstance(data, list) else data
     stack = []
-
-    block_constructors = {"(": ")", "{": "}", "[": "]", "<": ">"}
+    
+    block_constructors = {"{": "}", "(": ")", "[": "]", "<": ">"}
+    closing_brackets = set(block_constructors.values())
 
     for char in string:
         if char in block_constructors:
             stack.append(char)
-        elif stack:
-            if (
-                char in block_constructors.values()
-                and char == block_constructors[stack[-1]]
-            ):
+        elif char in closing_brackets and stack:
+            if char == block_constructors[stack[-1]]:
                 stack.pop()
 
-    if len(stack) == 0:
-        return True
-    else:
-        return False
+    return len(stack) == 0
 
 
 def process_line_block(line_block, target_type, content, cont):
     type_match = None
 
     if target_type == "type_override":
-        target_type = "#\s*tfdocs:\s*type"
+        target_type = r"#\s*tfdocs:\s*type"
 
     if not cont:
         type_match = (
