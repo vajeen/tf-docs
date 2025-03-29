@@ -6,35 +6,27 @@ import git
 
 
 def count_blocks(data):
-    if isinstance(data, list):
-        string = "".join(data)
-    else:
-        string = data
+    string = "".join(data) if isinstance(data, list) else data
     stack = []
-
-    block_constructors = {"(": ")", "{": "}", "[": "]", "<": ">"}
+    
+    block_constructors = {"{": "}", "(": ")", "[": "]", "<": ">"}
+    closing_brackets = set(block_constructors.values())
 
     for char in string:
         if char in block_constructors:
             stack.append(char)
-        elif stack:
-            if (
-                char in block_constructors.values()
-                and char == block_constructors[stack[-1]]
-            ):
+        elif char in closing_brackets and stack:
+            if char == block_constructors[stack[-1]]:
                 stack.pop()
 
-    if len(stack) == 0:
-        return True
-    else:
-        return False
+    return len(stack) == 0
 
 
 def process_line_block(line_block, target_type, content, cont):
     type_match = None
 
     if target_type == "type_override":
-        target_type = "#\s*tfdocs:\s*type"
+        target_type = r"#\s*tfdocs:\s*type"
 
     if not cont:
         type_match = (
@@ -69,93 +61,96 @@ def match_type_constructors(string):
 def format_block(content):
     start_braces = ["{", "[", "("]
     end_braces = ["}", "]", ")"]
-    prev_item = None
-    tmp_content = ""
+    
     if match_type_constructors(content):
         content_str = content.rstrip()
         indent = 4
-        tmp_str = ""
-        content_list = []
-        for index, char in enumerate(content_str):
+        tokens = []
+        current_token = []
+        
+        # Tokenize the input
+        for char in content_str:
             if char in start_braces + end_braces + [","]:
-                tmp_str = tmp_str.strip()
-                if tmp_str != "":
-                    content_list.append(tmp_str.strip())
-                content_list.append(char)
-                tmp_str = ""
+                if current_token:
+                    tokens.append("".join(current_token).strip())
+                    current_token = []
+                tokens.append(char)
             else:
-                tmp_str += char
+                current_token.append(char)
+        if current_token:
+            tokens.append("".join(current_token).strip())
 
-        for item in content_list:
-            if item not in start_braces:
-                if prev_item:
-                    if match_type_constructors(prev_item) and match_type_constructors(
-                        item
-                    ):
-                        tmp_content += item
-                    elif item == ",":
-                        tmp_content += item
-                    else:
-                        if item in end_braces:
-                            if prev_item in end_braces:
-                                tmp_content += item
-                            else:
-                                indent -= 2
-                                tmp_content += "\n" + " " * indent + item
-                        else:
-                            tmp_content += "\n" + " " * indent + item
-                else:
-                    tmp_content += item
-            else:
+        # Format the tokens
+        result = []
+        prev_item = None
+        
+        for item in tokens:
+            if item in start_braces:
                 if match_type_constructors(prev_item):
-                    tmp_content += item
+                    result.append(item)
                 else:
+                    result.append(item)
                     indent += 2
-                    tmp_content += item + "\n" + " " * indent
-
+                    result.append("\n" + " " * indent)
+            elif item == ",":
+                result.append(item)
+            elif item in end_braces:
+                if prev_item in end_braces:
+                    result.append(item)
+                else:
+                    indent -= 2
+                    result.append("\n" + " " * indent + item)
+            else:
+                if prev_item:
+                    if match_type_constructors(prev_item) and match_type_constructors(item):
+                        result.append(item)
+                    else:
+                        result.append("\n" + " " * indent + item)
+                else:
+                    result.append(item)
+            
             if item not in start_braces + [","]:
                 prev_item = item
-    else:
-        content_str = content.rstrip()
-        indent = 2
+                
+        return "".join(result)
+    
+    # Handle non-type constructor case
+    content_str = content.rstrip()
+    indent = 2
+    result = []
+    brace_flag = False
+    content_flag = 0
 
-        # Check if the content has braces
-        brace_flag = False
-
-        # Check if the content is not only braces
-        content_flag = 0
-
-        for char in content_str:
-            if char in start_braces or char in end_braces:
-                brace_flag = True
-                char = char.strip()
-                if char in end_braces:
-                    indent -= 2
-                    tmp_content += "\n" + " " * indent + char
-                else:
-                    tmp_content += char
-                    if char in start_braces:
-                        indent += 2
-                        tmp_content += "\n" + " " * indent
-            elif char == "," and brace_flag:
-                tmp_content += char + "\n" + " " * indent
+    for char in content_str:
+        if char in start_braces + end_braces:
+            brace_flag = True
+            char = char.strip()
+            if char in end_braces:
+                indent -= 2
+                result.extend(["\n", " " * indent, char])
             else:
-                if content_flag >= 1 and char.strip() != "":
-                    content_flag = 2
-                elif char == "=":
-                    content_flag = 1
+                result.append(char)
+                if char in start_braces:
+                    indent += 2
+                    result.extend(["\n", " " * indent])
+        elif char == "," and brace_flag:
+            result.extend([char, "\n", " " * indent])
+        else:
+            if content_flag >= 1 and char.strip():
+                content_flag = 2
+            elif char == "=":
+                content_flag = 1
+            result.append(char)
 
-                tmp_content += char
-
-        # If the content is not only braces remove the leading and trailing spaces
-        if content_flag == 1:
-            tmp_content_left, tmp_content_right = tmp_content.split("=", 1)
-            tmp_content_right = (
-                tmp_content_right.replace("\n", "").replace("\r", "").replace(" ", "")
-            )
-            tmp_content = tmp_content_left + "= " + tmp_content_right
-
-    return tmp_content
+    formatted = "".join(result)
+    
+    # Handle special case for assignments
+    if content_flag == 1:
+        left, right = formatted.split("=", 1)
+        right = right.replace("\n", "").replace("\r", "").replace(" ", "")
+        return f"{left}= {right}"
+        
+    return formatted
 
 
 def construct_tf_variable(content):
