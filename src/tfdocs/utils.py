@@ -59,132 +59,89 @@ def match_type_constructors(string):
 
 
 def format_block(content):
-    start_braces = ["{", "[", "("]
-    end_braces = ["}", "]", ")"]
-    
-    if match_type_constructors(content):
-        content_str = content.rstrip()
-        indent = 4
-        tokens = []
-        current_token = []
-        
-        # Tokenize the input
-        for char in content_str:
-            if char in start_braces + end_braces + [","]:
-                if current_token:
-                    tokens.append("".join(current_token).strip())
-                    current_token = []
-                tokens.append(char)
-            else:
-                current_token.append(char)
-        if current_token:
-            tokens.append("".join(current_token).strip())
+    input_str = content.strip()
 
-        # Format the tokens
+    if "{" not in input_str:
+        return input_str
+
+    def add_missing_commas(s):
+        return re.sub(r'([}\]"\w])(\s+)(\w+\s*=)', r'\1,\2\3', s)
+
+    def smart_split(s):
         result = []
-        prev_item = None
-        
-        for item in tokens:
-            if item in start_braces:
-                if match_type_constructors(prev_item):
-                    result.append(item)
-                else:
-                    result.append(item)
-                    indent += 2
-                    result.append("\n" + " " * indent)
-            elif item == ",":
-                result.append(item)
-            elif item in end_braces:
-                if prev_item in end_braces:
-                    result.append(item)
-                else:
-                    indent -= 2
-                    result.append("\n" + " " * indent + item)
+        current = ''
+        depth = 0
+        for char in s:
+            if char in '{[':
+                depth += 1
+            elif char in '}]':
+                depth -= 1
+            if char == ',' and depth == 0:
+                result.append(current.strip())
+                current = ''
             else:
-                if prev_item:
-                    if match_type_constructors(prev_item) and match_type_constructors(item):
-                        result.append(item)
-                    else:
-                        result.append("\n" + " " * indent + item)
-                else:
-                    result.append(item)
-            
-            if item not in start_braces + [","]:
-                prev_item = item
-                
-        return "".join(result)
-    
-    # Handle non-type constructor case
-    content_str = content.rstrip()
-    indent = 2
-    result = []
-    brace_flag = False
-    content_flag = 0
+                current += char
+        if current.strip():
+            result.append(current.strip())
+        return result
 
-    for char in content_str:
-        if char in start_braces + end_braces:
-            brace_flag = True
-            char = char.strip()
-            if char in end_braces:
-                indent -= 2
-                result.extend(["\n", " " * indent, char])
+    def format_object_block(block_content, indent_level=2):
+        indent = "  " * indent_level
+        items = smart_split(block_content.strip())
+
+        if len(items) == 1 and len(block_content.strip()) < 40:
+            return "{ " + block_content.strip() + " }"
+
+        formatted_str = "{\n"
+        for i, item in enumerate(items):
+            if "=" not in item:
+                continue
+            key, val = map(str.strip, item.split("=", 1))
+            comma = "," if i < len(items) - 1 else ""
+            if val.startswith("{") and val.endswith("}"):
+                val = format_object_block(val[1:-1], indent_level + 1)
+                formatted_str += f"{indent}{key} = {val}{comma}\n"
             else:
-                result.append(char)
-                if char in start_braces:
-                    indent += 2
-                    result.extend(["\n", " " * indent])
-        elif char == "," and brace_flag:
-            result.extend([char, "\n", " " * indent])
-        else:
-            if content_flag >= 1 and char.strip():
-                content_flag = 2
-            elif char == "=":
-                content_flag = 1
-            result.append(char)
+                formatted_str += f"{indent}{key} = {val}{comma}\n"
+        formatted_str += "  " * (indent_level - 1) + "}"
+        return formatted_str
 
-    formatted = "".join(result)
-    
-    # Handle special case for assignments
-    if content_flag == 1:
-        left, right = formatted.split("=", 1)
-        right = right.replace("\n", "").replace("\r", "").replace(" ", "")
-        return f"{left}= {right}"
-        
-    return formatted
+    def add_indent_after_first_line(s):
+        lines = s.splitlines()
+        if len(lines) <= 1:
+            return s
+        return lines[0] + "\n" + "\n".join("  " + line for line in lines[1:])
+
+    nested_match = re.match(r'(\w+\s*\(\s*\w+\s*\(\s*){(.*)}(\s*\)\s*\))', input_str)
+    if nested_match:
+        prefix, body, suffix = nested_match.groups()
+        body_fixed = add_missing_commas(body)
+        formatted_body = format_object_block(body_fixed)
+        return add_indent_after_first_line(f"{prefix}{formatted_body}{suffix}")
+
+    if input_str.startswith("{") and input_str.endswith("}"):
+        inner = input_str[1:-1]
+        inner_fixed = add_missing_commas(inner)
+        formatted = format_object_block(inner_fixed, indent_level=1)
+        return add_indent_after_first_line(formatted)
+
+    return input_str
 
 
 def construct_tf_variable(content):
-    default_str = (
-        f'  default = {content.pop("default")}\n' if "default" in content else ""
-    )
+    lines = [f'variable "{content["name"]}" {{']
 
-    type_override = (
-        f"  #tfdocs: type={content['type_override']}" + "\n"
-        if content["type_override"]
-        else ""
-    )
+    if content["type_override"]:
+        lines.append(f'  #tfdocs: type={content["type_override"].strip()}')
 
-    formatted_default_str = format_block(default_str)
-    default_str = formatted_default_str + "\n" if formatted_default_str else ""
+    lines.append(f'  type = {format_block(content["type"].strip())}')
+    lines.append(f'  description = {content["description"].strip()}')
 
-    type_str = format_block(content["type"])
+    if "default" in content:
+        lines.append(f'  default = {format_block(content["default"].strip())}')
 
-    template = (
-        'variable "{name}" {{\n'
-        "{type_override}"
-        "  type = {type}\n"
-        "  description = {description}\n"
-        "{default}"
-        "}}\n\n"
-    )
-
-    return template.format(
-        name=content["name"],
-        type_override=type_override,
-        type=type_str,
-        description=content["description"],
-        default=default_str,
-    )
+    lines.append("}")
+    return "\n".join(lines)
 
 
 def construct_tf_file(content):
