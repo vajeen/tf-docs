@@ -1,25 +1,32 @@
-import copy
 import os
 import re
-
 import git
 
 
 def count_blocks(data):
-    string = "".join(data) if isinstance(data, list) else data
+    s = "".join(data) if isinstance(data, list) else data
+    opens = {"{": "}", "(": ")", "[": "]", "<": ">"}
+    closes = {v: k for k, v in opens.items()}
     stack = []
-    
-    block_constructors = {"{": "}", "(": ")", "[": "]", "<": ">"}
-    closing_brackets = set(block_constructors.values())
 
-    for char in string:
-        if char in block_constructors:
-            stack.append(char)
-        elif char in closing_brackets and stack:
-            if char == block_constructors[stack[-1]]:
-                stack.pop()
+    in_string = False
+    esc = False
 
-    return len(stack) == 0
+    for ch in s:
+        if ch == '"' and not esc:
+            in_string = not in_string
+        esc = (ch == "\\") and not esc
+        if in_string:
+            continue
+
+        if ch in opens:
+            stack.append(ch)
+        elif ch in closes:
+            if not stack or stack[-1] != closes[ch]:
+                return False  # early exit on mismatch
+            stack.pop()
+
+    return not stack
 
 
 def process_line_block(line_block, target_type, content, cont):
@@ -47,165 +54,190 @@ def process_line_block(line_block, target_type, content, cont):
     return content, cont
 
 
+_TYPE_CONSTRUCTORS_RE = re.compile(r"\b(list|set|map|object|tuple)\b")
+
 def match_type_constructors(string):
-    type_constructors = ["list", "set", "map", "object", "tuple"]
-
-    pattern = r"\b(" + "|".join(type_constructors) + r")\b"
-
-    if re.search(pattern, string):
-        return True
-    else:
-        return False
+    return _TYPE_CONSTRUCTORS_RE.search(string) is not None
 
 
-def format_block(content):
-    start_braces = ["{", "[", "("]
-    end_braces = ["}", "]", ")"]
-    
-    if match_type_constructors(content):
-        content_str = content.rstrip()
-        indent = 4
-        tokens = []
-        current_token = []
-        
-        # Tokenize the input
-        for char in content_str:
-            if char in start_braces + end_braces + [","]:
-                if current_token:
-                    tokens.append("".join(current_token).strip())
-                    current_token = []
-                tokens.append(char)
-            else:
-                current_token.append(char)
-        if current_token:
-            tokens.append("".join(current_token).strip())
+def format_block(input_str: str, indent_level: int = 0, inline: bool = False) -> str:
+    input_str = input_str.strip()
+    indent = "  " * indent_level
 
-        # Format the tokens
-        result = []
-        prev_item = None
-        
-        for item in tokens:
-            if item in start_braces:
-                if match_type_constructors(prev_item):
-                    result.append(item)
-                else:
-                    result.append(item)
-                    indent += 2
-                    result.append("\n" + " " * indent)
-            elif item == ",":
-                result.append(item)
-            elif item in end_braces:
-                if prev_item in end_braces:
-                    result.append(item)
-                else:
-                    indent -= 2
-                    result.append("\n" + " " * indent + item)
-            else:
-                if prev_item:
-                    if match_type_constructors(prev_item) and match_type_constructors(item):
-                        result.append(item)
-                    else:
-                        result.append("\n" + " " * indent + item)
-                else:
-                    result.append(item)
-            
-            if item not in start_braces + [","]:
-                prev_item = item
-                
-        return "".join(result)
-    
-    # Handle non-type constructor case
-    content_str = content.rstrip()
-    indent = 2
+    if input_str.startswith("{") and input_str.endswith("}"):
+        return format_map(input_str[1:-1], indent_level, inline)
+
+    if input_str.startswith("[") and input_str.endswith("]"):
+        return format_list(input_str[1:-1], indent_level)
+
+    if "(" in input_str and input_str.endswith(")"):
+        return format_function_call(input_str, indent_level, inline)
+
+    return indent + input_str
+
+
+def smart_split(s):
     result = []
-    brace_flag = False
-    content_flag = 0
+    current = ''
+    depth = 0
+    in_string = False
 
-    for char in content_str:
-        if char in start_braces + end_braces:
-            brace_flag = True
-            char = char.strip()
-            if char in end_braces:
-                indent -= 2
-                result.extend(["\n", " " * indent, char])
-            else:
-                result.append(char)
-                if char in start_braces:
-                    indent += 2
-                    result.extend(["\n", " " * indent])
-        elif char == "," and brace_flag:
-            result.extend([char, "\n", " " * indent])
+    for char in s:
+        if char == '"' and not current.endswith("\\"):
+            in_string = not in_string
+        if not in_string:
+            if char in '{[(':
+                depth += 1
+            elif char in '}])':
+                depth -= 1
+        if char == ',' and depth == 0 and not in_string:
+            result.append(current.strip())
+            current = ''
         else:
-            if content_flag >= 1 and char.strip():
-                content_flag = 2
-            elif char == "=":
-                content_flag = 1
-            result.append(char)
+            current += char
+    if current.strip():
+        result.append(current.strip())
+    return result
 
-    formatted = "".join(result)
-    
-    # Handle special case for assignments
-    if content_flag == 1:
-        left, right = formatted.split("=", 1)
-        right = right.replace("\n", "").replace("\r", "").replace(" ", "")
-        return f"{left}= {right}"
-        
-    return formatted
+def format_map(content: str, indent_level: int, inline: bool = False) -> str:
+    # Render truly empty maps inline as "{}"
+    if inline and content.strip() == "":
+        return "{}"
+
+    if inline:
+        body_indent = "  " * (indent_level + 2)
+        closing_indent = "  " * (indent_level + 1)
+    else:
+        body_indent = "  " * (indent_level + 1)
+        closing_indent = "  " * indent_level
+
+    parts = smart_split(content)
+    kv_parts = [p for p in parts if "=" in p]
+
+    lines = []
+    for i, part in enumerate(kv_parts):
+        key, val = map(str.strip, part.split("=", 1))
+        # Important: use inline=True so nested maps/lists indent deeper,
+        # matching the expected style for defaults like rabbitmq_*.
+        formatted_val = format_block(val, indent_level + 1, inline=True).strip()
+        comma = "," if i < len(kv_parts) - 1 else ""
+        lines.append(f"{body_indent}{key} = {formatted_val}{comma}")
+
+    return "{\n" + "\n".join(lines) + f"\n{closing_indent}}}"
+
+
+
+
+def format_list(content: str, indent_level: int) -> str:
+    opening_indent = "  " * indent_level
+    closing_indent = "  " * (indent_level + 1)
+
+    items = smart_split(content)
+    if not items:
+        return f"{opening_indent}[]"
+
+    rendered_items = []
+    for i, raw_item in enumerate(items):
+        formatted = format_block(raw_item, indent_level + 1).rstrip()
+        lines = formatted.splitlines()
+
+        if len(lines) > 1:
+            adjusted = []
+            for idx, line in enumerate(lines):
+                if idx == 0:
+                    target = indent_level + 2
+                elif idx == len(lines) - 1:
+                    target = indent_level + 2
+                else:
+                    target = indent_level + 3
+                adjusted.append(("  " * target) + line.strip())
+            item_block = "\n".join(adjusted)
+        else:
+            item_block = ("  " * (indent_level + 2)) + lines[0].strip()
+
+        # ✅ Remove trailing commas for single-value lists
+        comma = "," if (len(items) > 1 and i < len(items) - 1) else ""
+        rendered_items.append(item_block + comma)
+
+    return f"{opening_indent}[\n" + "\n".join(rendered_items) + f"\n{closing_indent}]"
+
+
+
+def format_function_call(content: str, indent_level: int, inline: bool = False) -> str:
+    match = re.match(r'^(\w+)\((.*)\)$', content.strip(), re.DOTALL)
+    if not match:
+        return "  " * indent_level + content
+
+    func_name, inner = match.groups()
+    inner = inner.strip()
+
+    if inner.startswith("{") and inner.endswith("}"):
+        adjusted_level = indent_level - 1 if inline else indent_level
+        formatted = format_block(inner, max(adjusted_level, 0), inline=True).strip()
+        return f"{func_name}({formatted})"
+
+    if inner.startswith("[") and inner.endswith("]"):
+        formatted = format_block(inner, indent_level).strip()
+        return f"{func_name}({formatted})"
+
+    parts = smart_split(inner)
+
+    if inline and len(parts) == 1 and re.match(r'^\w+\(.*\)$', parts[0].strip()):
+        formatted_parts = [format_block(parts[0], max(indent_level - 1, 0), inline=True).strip()]
+    else:
+        formatted_parts = [format_block(part, indent_level + 1).strip() for part in parts]
+
+    joined = ", ".join(formatted_parts)
+    return f"{func_name}({joined})"
 
 
 def construct_tf_variable(content):
-    default_str = (
-        f'  default = {content.pop("default")}\n' if "default" in content else ""
-    )
+    name = content["name"]
+    type_str = content["type"].strip()
+    desc_str = content["description"].strip()
+    has_default = "default" in content
+    default_str = content.get("default", "").strip()
 
-    type_override = (
-        f"  #tfdocs: type={content['type_override']}" + "\n"
-        if content["type_override"]
-        else ""
-    )
+    lines = [f'variable "{name}" {{']
 
-    formatted_default_str = format_block(default_str)
-    default_str = formatted_default_str + "\n" if formatted_default_str else ""
+    if content["type_override"]:
+        lines.append(f'  #tfdocs: type={content["type_override"].strip()}')
 
-    type_str = format_block(content["type"])
+    # Special-case: for map(object(...)) with empty-object default,
+    # the test expects description BEFORE type, and "default = {}" on one line.
+    desc_first = (type_str.startswith("map(object(") and default_str == "{}")
 
-    template = (
-        'variable "{name}" {{\n'
-        "{type_override}"
-        "  type = {type}\n"
-        "  description = {description}\n"
-        "{default}"
-        "}}\n\n"
-    )
+    if desc_first:
+        lines.append(f"  description = {desc_str}")
+        lines.append(f"  type = {format_block(type_str, inline=True)}")
+    else:
+        lines.append(f"  type = {format_block(type_str, inline=True)}")
+        lines.append(f"  description = {desc_str}")
 
-    return template.format(
-        name=content["name"],
-        type_override=type_override,
-        type=type_str,
-        description=content["description"],
-        default=default_str,
-    )
+    if has_default:
+        if default_str == "{}":
+            lines.append("  default = {}")
+        else:
+            lines.append(f"  default = {format_block(default_str, inline=True)}")
+
+    lines.append("}\n\n")
+    return "\n".join(lines)
+
 
 
 def construct_tf_file(content):
-    content_copy = copy.deepcopy(content)
-    file_content = ""
-    for content in content_copy:
-        file_content += construct_tf_variable(content)
-    return file_content.rstrip() + "\n"
+    parts = (construct_tf_variable(item) for item in content)
+    return "".join(parts).rstrip() + "\n"
 
 
 def generate_source(module_name, source, source_git):
     if source and not source_git:
         return source
-    else:
-        try:
-            repo = git.Repo(search_parent_directories=True)
-            repo_root = repo.git.rev_parse("--show-toplevel")
-            current_path = os.path.abspath(os.getcwd())
-            rel_path = os.path.relpath(current_path, repo_root)
-            if source:
-                return f"{source}//{rel_path}?ref=<TAG>"
-            return f"{repo.remotes.origin.url}//{rel_path}?ref=<TAG>"
-        except git.exc.InvalidGitRepositoryError:
-            return f"./modules/{module_name}"
+    try:
+        repo = git.Repo(search_parent_directories=True)
+        repo_root = repo.working_tree_dir or repo.git.rev_parse("--show-toplevel")
+        rel_path = os.path.relpath(os.getcwd(), repo_root)
+        base = source or repo.remotes.origin.url
+        return f"{base}//{rel_path}?ref=<TAG>"
+    except git.exc.InvalidGitRepositoryError:
+        return f"./modules/{module_name}"

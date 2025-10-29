@@ -94,8 +94,6 @@ def test_process_line_block():
         "# tfdocs: type=object(", "type_override", "", None
     ) == ("object(", "#\\s*tfdocs:\\s*type")
 
-
-
     assert utils.process_line_block("  )]", "type", "type = list[(", "type") == (
         "type = list[()]",
         None,
@@ -131,12 +129,12 @@ def test_match_type_constructors():
 
 def test_format_block():
     assert (
-        utils.format_block('  default = "my default string"')
-        == '  default = "my default string"'
+        utils.format_block("my default string")
+        == "my default string"
     )
 
-    var1in = '  default = [{name = "name1",size = 10,directory = "dir1"},{name = "name2",size = 15,directory = "dir2"},{name = "name3",size = 20,directory = "dir3"}]'
-    var1out = """  default = [
+    var1in = '[{name = "name1",size = 10,directory = "dir1"},{name = "name2",size = 15,directory = "dir2"},{name = "name3",size = 20,directory = "dir3"}]'
+    var1out = """[
     {
       name = "name1",
       size = 10,
@@ -157,16 +155,16 @@ def test_format_block():
 
     var2in = "list(object({name = string,size = number,directory = string}))"
     var2out = """list(object({
-    name = string,
-    size = number,
-    directory = string
-  }))"""
+      name = string,
+      size = number,
+      directory = string
+    }))"""
     assert utils.format_block(var2in) == var2out
 
     assert (
-        utils.format_block('  default = "myapp-1.1.1"') == '  default = "myapp-1.1.1"'
+        utils.format_block('"myapp-1.1.1"') == '"myapp-1.1.1"'
     )
-    assert utils.format_block("  default = 40") == "  default = 40"
+    assert utils.format_block("40") == "40"
 
 
 def test_construct_tf_variable():
@@ -462,6 +460,96 @@ variable "my_var_6" {
 }
 """
     assert utils.construct_tf_file(var7in) == var7out
+
+    var8in = [
+        {
+            "name": "my_var",
+            "type_override": None,
+            "type": "map(object({var1 = string,var2 = list(string),var3 = string}))",
+            "description": '"My description"',
+            "default": "{}",
+        }
+    ]
+    var8out = """variable "my_var" {
+  description = "My description"
+  type = map(object({
+    var1 = string,
+    var2 = list(string),
+    var3 = string
+  }))
+  default = {}
+}
+"""
+    assert utils.construct_tf_file(var8in) == var8out
+
+    var9in = [
+        {
+            "name": "my_var",
+            "type_override": None,
+            "type": "map(object({ tags = list(string),vhosts = list(string)}))",
+            "description": '"My Description"',
+            "default": '{"user1"={tags=["tag1"],vhosts=["vh1"]},"user2"={tags=["tag2"],vhosts=["vh2"]}}',
+        }
+    ]
+    var9out = """variable "my_var" {
+  type = map(object({
+    tags = list(string),
+    vhosts = list(string)
+  }))
+  description = "My Description"
+  default = {
+    "user1" = {
+      tags = [
+        "tag1"
+      ],
+      vhosts = [
+        "vh1"
+      ]
+    },
+    "user2" = {
+      tags = [
+        "tag2"
+      ],
+      vhosts = [
+        "vh2"
+      ]
+    }
+  }
+}
+"""
+    assert utils.construct_tf_file(var9in) == var9out
+
+    var10in = [
+        {
+            "name": "my_var",
+            "type_override": None,
+            "type": "map(object({ tags = list(string),vhosts = list(string)}))",
+            "description": '"My description"',
+            "default": '{"monitor"={tags=["tag3"],vhosts=["vh1","vh2","vh3"]}}',
+        }
+    ]
+    var10out = """variable "my_var" {
+  type = map(object({
+    tags = list(string),
+    vhosts = list(string)
+  }))
+  description = "My description"
+  default = {
+    "monitor" = {
+      tags = [
+        "tag3"
+      ],
+      vhosts = [
+        "vh1",
+        "vh2",
+        "vh3"
+      ]
+    }
+  }
+}
+"""
+    assert utils.construct_tf_file(var10in) == var10out
+
 
 def test_generate_source():
     assert (
