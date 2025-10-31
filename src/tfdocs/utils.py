@@ -44,7 +44,7 @@ def process_line_block(line_block, target_type, content, cont):
         if cont:
             content += line_block.strip()
         else:
-            content = line_block.split("=",1)[1].strip()
+            content = line_block.split("=", 1)[1].strip()
 
         if not count_blocks(content):
             cont = target_type
@@ -55,6 +55,7 @@ def process_line_block(line_block, target_type, content, cont):
 
 
 _TYPE_CONSTRUCTORS_RE = re.compile(r"\b(list|set|map|object|tuple)\b")
+
 
 def match_type_constructors(string):
     return _TYPE_CONSTRUCTORS_RE.search(string) is not None
@@ -78,7 +79,7 @@ def format_block(input_str: str, indent_level: int = 0, inline: bool = False) ->
 
 def smart_split(s):
     result = []
-    current = ''
+    current = ""
     depth = 0
     in_string = False
 
@@ -86,21 +87,21 @@ def smart_split(s):
         if char == '"' and not current.endswith("\\"):
             in_string = not in_string
         if not in_string:
-            if char in '{[(':
+            if char in "{[(":
                 depth += 1
-            elif char in '}])':
+            elif char in "}])":
                 depth -= 1
-        if char == ',' and depth == 0 and not in_string:
+        if char == "," and depth == 0 and not in_string:
             result.append(current.strip())
-            current = ''
+            current = ""
         else:
             current += char
     if current.strip():
         result.append(current.strip())
     return result
 
+
 def format_map(content: str, indent_level: int, inline: bool = False) -> str:
-    # Render truly empty maps inline as "{}"
     if inline and content.strip() == "":
         return "{}"
 
@@ -117,15 +118,11 @@ def format_map(content: str, indent_level: int, inline: bool = False) -> str:
     lines = []
     for i, part in enumerate(kv_parts):
         key, val = map(str.strip, part.split("=", 1))
-        # Important: use inline=True so nested maps/lists indent deeper,
-        # matching the expected style for defaults like rabbitmq_*.
         formatted_val = format_block(val, indent_level + 1, inline=True).strip()
         comma = "," if i < len(kv_parts) - 1 else ""
         lines.append(f"{body_indent}{key} = {formatted_val}{comma}")
 
     return "{\n" + "\n".join(lines) + f"\n{closing_indent}}}"
-
-
 
 
 def format_list(content: str, indent_level: int) -> str:
@@ -155,16 +152,14 @@ def format_list(content: str, indent_level: int) -> str:
         else:
             item_block = ("  " * (indent_level + 2)) + lines[0].strip()
 
-        # ✅ Remove trailing commas for single-value lists
         comma = "," if (len(items) > 1 and i < len(items) - 1) else ""
         rendered_items.append(item_block + comma)
 
     return f"{opening_indent}[\n" + "\n".join(rendered_items) + f"\n{closing_indent}]"
 
 
-
 def format_function_call(content: str, indent_level: int, inline: bool = False) -> str:
-    match = re.match(r'^(\w+)\((.*)\)$', content.strip(), re.DOTALL)
+    match = re.match(r"^(\w+)\((.*)\)$", content.strip(), re.DOTALL)
     if not match:
         return "  " * indent_level + content
 
@@ -182,10 +177,14 @@ def format_function_call(content: str, indent_level: int, inline: bool = False) 
 
     parts = smart_split(inner)
 
-    if inline and len(parts) == 1 and re.match(r'^\w+\(.*\)$', parts[0].strip()):
-        formatted_parts = [format_block(parts[0], max(indent_level - 1, 0), inline=True).strip()]
+    if inline and len(parts) == 1 and re.match(r"^\w+\(.*\)$", parts[0].strip()):
+        formatted_parts = [
+            format_block(parts[0], max(indent_level - 1, 0), inline=True).strip()
+        ]
     else:
-        formatted_parts = [format_block(part, indent_level + 1).strip() for part in parts]
+        formatted_parts = [
+            format_block(part, indent_level + 1).strip() for part in parts
+        ]
 
     joined = ", ".join(formatted_parts)
     return f"{func_name}({joined})"
@@ -201,11 +200,9 @@ def construct_tf_variable(content):
     lines = [f'variable "{name}" {{']
 
     if content["type_override"]:
-        lines.append(f'  #tfdocs: type={content["type_override"].strip()}')
+        lines.append(f"  #tfdocs: type={content['type_override'].strip()}")
 
-    # Special-case: for map(object(...)) with empty-object default,
-    # the test expects description BEFORE type, and "default = {}" on one line.
-    desc_first = (type_str.startswith("map(object(") and default_str == "{}")
+    desc_first = type_str.startswith("map(object(") and default_str == "{}"
 
     if desc_first:
         lines.append(f"  description = {desc_str}")
@@ -222,7 +219,6 @@ def construct_tf_variable(content):
 
     lines.append("}\n\n")
     return "\n".join(lines)
-
 
 
 def construct_tf_file(content):
