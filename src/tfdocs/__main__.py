@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # Copyright (c) 2024 Vajeen Karunathilaka <vajeen@gmail.com>
 #
-# MIT License (see header above)
+# MIT License
 
 from __future__ import annotations
 
 import errno
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from rich.console import Console
 
@@ -16,7 +15,11 @@ from tfdocs import cli
 from tfdocs import readme
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> None:
+    """
+    Entry point used by tests. It MUST call sys.exit(..) so tests that
+    expect SystemExit behave correctly.
+    """
     if argv is None:
         argv = sys.argv
 
@@ -24,16 +27,16 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if options.version:
         print(f"tfdocs {cli.get_version()}")
-        return 0
+        sys.exit(0)
 
-    module_name: str = options.module_name or Path.cwd().name
+    module_name = options.module_name or Path.cwd().name
 
     rd = readme.Readme(
-        readme_file=options.readme_file,
-        variables_file=options.variables_file,
-        module_name=module_name,
-        module_source=options.source,
-        module_source_git=options.git_source,
+        options.readme_file,
+        options.variables_file,
+        module_name,
+        options.source,
+        options.git_source,
     )
 
     if not options.dry_run and options.format:
@@ -44,7 +47,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             rd.print_variables_file()
             if not rd.get_status()["variables"]:
                 rd.print_readme()
-                return report_and_exit(
+                report_and_exit(
                     rd.get_status(),
                     options.readme_file,
                     options.variables_file,
@@ -53,7 +56,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 )
 
         rd.print_readme()
-        return report_and_exit(
+        report_and_exit(
             rd.get_status(),
             options.readme_file,
             options.variables_file,
@@ -62,7 +65,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
 
     rd.write_readme()
-    return report_and_exit(
+    report_and_exit(
         rd.get_status(),
         options.readme_file,
         options.variables_file,
@@ -72,14 +75,18 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 
 def report_and_exit(
-    status: Dict[str, bool],
+    status: dict[str, bool],
     readme_file: str,
     variables_file: str,
     format_variables: bool,
     dry_run: bool,
-) -> int:
+) -> None:
+    """
+    Print a summary and exit with the expected codes.
+    Exits -1 when there are updates/pending updates; 0 otherwise.
+    """
     console = Console()
-    changed_files: List[str] = []
+    changed_files: list[str] = []
 
     if status.get("readme"):
         changed_files.append(readme_file)
@@ -94,19 +101,22 @@ def report_and_exit(
             if not dry_run
             else f"[yellow]Pending changes:[/] {changed_list}"
         )
-        return -1
+        sys.exit(-1)
     else:
         console.print("[cyan]Nothing to update!!![/]")
-        return 0
+        sys.exit(0)
 
 
 def _cli_entrypoint() -> None:
+    """
+    Console script entrypoint. Mirrors your original signal/errno handling.
+    """
     try:
         sys.exit(main(sys.argv))
     except OSError as exc:
-        if exc.errno != errno.EPIPE:
-            raise
-        sys.exit(0)
+        if exc.errno == errno.EPIPE:
+            return
+        raise
     except KeyboardInterrupt:
         sys.exit(130)
     except RuntimeError as exc:
