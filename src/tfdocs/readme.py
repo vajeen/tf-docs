@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+from typing import List, Dict, Optional, TypedDict
 
 from rich.console import Console
 
@@ -12,39 +13,52 @@ from tfdocs.utils import (
 )
 
 
+class VariableItem(TypedDict, total=False):
+    name: str
+    type_override: Optional[str]
+    type: str
+    description: str
+    default: str
+
+
 class Readme:
+    _re_var_header = re.compile(r'\s*variable\s+"?(\w+)"?\s*{\s*', re.DOTALL)
+
     def __init__(
         self,
-        readme_file,
-        variables_file,
-        module_name=None,
-        module_source=None,
-        module_source_git=False,
-    ):
-        self.module_name = module_name
-        self.module_source = module_source
-        self.module_source_git = module_source_git
-        self.readme_content: str
-        self.readme_changed = True
-        self.variables_changed = True
-        self.readme_file = readme_file
-        self.variables_file = variables_file
-        self.str_len = 0
+        readme_file: str,
+        variables_file: str,
+        module_name: Optional[str] = None,
+        module_source: Optional[str] = None,
+        module_source_git: bool = False,
+    ) -> None:
+        self.module_name: Optional[str] = module_name
+        self.module_source: Optional[str] = module_source
+        self.module_source_git: bool = module_source_git
+        self.readme_content: str  # populated lazily via construct_readme()
+        self.readme_changed: bool = True
+        self.variables_changed: bool = True
+        self.readme_file: str = readme_file
+        self.variables_file: str = variables_file
+        self.str_len: int = 0
         self.console = Console()
-        self.variables = []
+        self.variables: List[VariableItem] = []
 
         try:
             with open(self.variables_file, "r") as file:
                 file_content = file.read().strip()
 
-            block = []
+            block: List[str] = []
             match_flag = False
+            name: Optional[str] = None
+
             for line in file_content.split("\n"):
                 block.append(line)
-                match = re.match(r'\s*variable\s+"?(\w+)"?\s*{\s*', line, re.DOTALL)
+                match = self._re_var_header.match(line)
                 if match and not match_flag:
                     name = match.group(1)
                     match_flag = True
+
                 if count_blocks(block) and match_flag:
                     match_flag = False
                     (
@@ -53,13 +67,8 @@ class Readme:
                         description_content,
                         type_override,
                         cont,
-                    ) = (
-                        "",
-                        "",
-                        "",
-                        None,
-                        None,
-                    )
+                    ) = ("", "", "", None, None)
+
                     for line_block in block:
                         type_content, cont = process_line_block(
                             line_block, "type", type_content, cont
@@ -72,10 +81,11 @@ class Readme:
                         type_len_content = (
                             type_override if type_override else type_content
                         )
+                        if name and type_len_content:
+                            candidate_len = len(f"  {name} = <{type_len_content}>")
+                            if candidate_len > self.str_len:
+                                self.str_len = candidate_len
 
-                        if type_len_content:
-                            if len(f"  {name} = <{type_len_content}>") > self.str_len:
-                                self.str_len = len(f"  {name} = <{type_len_content}>")
                         default_content, cont = process_line_block(
                             line_block, "default", default_content, cont
                         )
@@ -84,8 +94,8 @@ class Readme:
                         )
 
                     block = []
-                    attributes = {
-                        "name": name,
+                    attributes: VariableItem = {
+                        "name": name or "",
                         "type_override": type_override,
                         "type": type_content if type_content else "unknown",
                         "description": description_content
@@ -98,7 +108,9 @@ class Readme:
 
                     self.variables.append(attributes)
 
-            self.sorted_variables = sorted(self.variables, key=lambda k: k["name"])
+            self.sorted_variables: List[VariableItem] = sorted(
+                self.variables, key=lambda k: k["name"]
+            )
 
             if construct_tf_file(self.sorted_variables).strip() == file_content.strip():
                 self.variables_changed = False
@@ -109,45 +121,42 @@ class Readme:
             )
             sys.exit(-1)
 
-    def write_variables(self):
+    def write_variables(self) -> None:
         with open(self.variables_file, "w") as file:
             file.writelines(construct_tf_file(self.sorted_variables))
 
-    def print_variables_file(self):
+    def print_variables_file(self) -> None:
         self.console.print("[purple]--- variables.tf ---[/]")
         print(construct_tf_file(self.sorted_variables))
 
-    def get_status(self):
+    def get_status(self) -> Dict[str, bool]:
         return {
             "readme": self.readme_changed,
             "variables": self.variables_changed,
         }
 
-    def construct_readme(self):
-        readme_content = [
+    def construct_readme(self) -> List[str]:
+        readme_content: List[str] = [
             "```",
             f"module <{self.module_name}> {{",
             f'  source = "{generate_source(self.module_name, self.module_source, self.module_source_git)}"',
         ]
 
         for item in self.sorted_variables:
-            type_str = item["type_override"] if item["type_override"] else item["type"]
-            spaces = " " * (self.str_len - len(f'  {item["name"]} = <{type_str}>') + 2)
+            type_str = (
+                item["type_override"] if item.get("type_override") else item["type"]
+            )
+            spaces = " " * (self.str_len - len(f"  {item['name']} = <{type_str}>") + 2)
+            desc_raw = item["description"]
             description = (
-                item["description"][1:-1]
-                if (
-                    item["description"].startswith('"')
-                    or item["description"].startswith("'")
-                )
-                and (
-                    item["description"].endswith('"')
-                    or item["description"].endswith("'")
-                )
-                else item["description"]
+                desc_raw[1:-1]
+                if (desc_raw.startswith('"') or desc_raw.startswith("'"))
+                and (desc_raw.endswith('"') or desc_raw.endswith("'"))
+                else desc_raw
             )
 
             readme_content.append(
-                f'  {item["name"]} = <{type_str.upper()}> {spaces} # {description}'
+                f"  {item['name']} = <{type_str.upper()}> {spaces} # {description}"
             )
 
         readme_content.append("}")
@@ -158,8 +167,8 @@ class Readme:
                 content = file.read()
 
             lines = content.split("\n")
-            start_index = None
-            end_index = None
+            start_index: Optional[int] = None
+            end_index: Optional[int] = None
 
             for i, line in enumerate(lines):
                 if "<!-- TFDOCS START -->" in line:
@@ -167,8 +176,7 @@ class Readme:
                 elif "<!-- TFDOCS END -->" in line:
                     end_index = i
 
-            # Insert between TFDOCS markers
-            lines_constructed = lines.copy()
+            lines_constructed = lines[:]
             if start_index is not None and end_index is not None:
                 del lines_constructed[start_index + 1 : end_index]
                 lines_constructed[start_index + 1 : start_index + 1] = readme_content
@@ -178,22 +186,22 @@ class Readme:
                     self.readme_changed = False
 
                 return lines_constructed
+
         return (
             [f"# {self.module_name} module", "", "<!-- TFDOCS START -->"]
             + readme_content
             + ["<!-- TFDOCS END -->", ""]
         )
 
-    def print_readme(self):
+    def print_readme(self) -> None:
         self.console.print("[purple]--- README.md ---[/]")
         for line in self.construct_readme():
             print(line)
 
-    def write_readme(self):
+    def write_readme(self) -> bool:
         readme_content = self.construct_readme()
 
-        # Remove extra empty line
-        if readme_content[-1] == "":
+        if readme_content and readme_content[-1] == "":
             readme_content.pop()
 
         with open(self.readme_file, "w") as file:
